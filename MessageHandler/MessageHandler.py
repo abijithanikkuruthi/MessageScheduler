@@ -62,7 +62,6 @@ class MessageHandler:
                             headers = getattr(message, 'headers', None)
                         )
             except Exception as e:
-                printerror(f'Error in processing: {message}')
                 printerror(e)
                 printerror(f'Worker {self.worker_id} terminated. Restarting...')
 

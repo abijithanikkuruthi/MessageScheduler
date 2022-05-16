@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  messagehandler:
+    build: ./MessageHandler
+    command: python3 main.py
+    volumes: 
+      - ./MessageHandler:/app
+    ports:
+      - 8000-8100:8000
+    environment:
+      - KAFKA_SERVER=192.168.28.46:9092
+      - TZ=Europe/Amsterdam
+      - DEBUG=False
+    restart: always

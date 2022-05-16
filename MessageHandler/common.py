@@ -31,7 +31,6 @@ def printinfo(message):
 def get_bucket_list():
     
     if CACHE and CACHE.get('bucket_list'):
-        printinfo('Using cached get_bucket_list()')
         return CACHE['bucket_list']
 
     printinfo('Building bucket list')
@@ -67,7 +66,7 @@ def get_bucket_list():
 
 def get_bucket_object_list():
     if CACHE and CACHE.get('bucket_object_list'):
-        printinfo('Using cached get_bucket_object_list()')
+        return CACHE['bucket_object_list']
     else:
         get_bucket_list()
 
@@ -81,7 +80,6 @@ def __get_admin():
 def create_topics(topic_list) -> bool:
     success = True
     admin_client = __get_admin()
-
     try:
         topicobject_list = [NewTopic(name=i['name'], num_partitions=i['num_partitions'], replication_factor=1) for i in topic_list]
         admin_client.create_topics(new_topics=topicobject_list, validate_only=False)
@@ -95,13 +93,20 @@ def create_topics(topic_list) -> bool:
     return success
 
 def get_config():
-    return {
+    if CACHE and CACHE.get('config'):
+        return CACHE['config']
+
+    cfg_obj = {
         'kafka_server' : KAFKA_SERVER,
         'bucket_list' : get_bucket_list(),
         'sm_topic' : SM_TOPIC,
         'group' : SM_CONSUMER_GROUP_NAME,
-        'time_format' : SM_TIME_FORMAT
+        'time_format' : SM_TIME_FORMAT,
+        'bucket_object_list' : get_bucket_object_list()
     }
+
+    CACHE['config'] = cfg_obj
+    return cfg_obj
 
 if __name__ == "__main__":
     print(get_bucket_list())
