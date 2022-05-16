@@ -1,5 +1,4 @@
 import time
-from xmlrpc.client import Boolean
 from kafka.admin import KafkaAdminClient, NewTopic
 from config import DEBUG, KAFKA_SERVER, SM_BUCKET_TOPIC_FORMAT, SM_BUCKETS_MULTIPLICATION_RATIO, SM_MAXIUMUM_DELAY, SM_MINIUMUM_DELAY, SM_TIME_FORMAT, SM_TOPIC, SM_CONSUMER_GROUP_NAME
 
@@ -31,9 +30,9 @@ def printinfo(message):
 
 def get_bucket_list():
     
-    if 'bucket_list' in CACHE:
+    if CACHE and CACHE.get('bucket_list'):
         printinfo('Using cached get_bucket_list()')
-        return CACHE.bucket_list
+        return CACHE['bucket_list']
 
     printinfo('Building bucket list')
     
@@ -67,27 +66,27 @@ def get_bucket_list():
     return bucket_list
 
 def get_bucket_object_list():
-    if 'bucket_object_list' in CACHE:
+    if CACHE and CACHE.get('bucket_object_list'):
         printinfo('Using cached get_bucket_object_list()')
     else:
         get_bucket_list()
 
-    return CACHE.bucket_object_list
+    return CACHE['bucket_object_list']
 
 def __get_admin():
     return KafkaAdminClient(
         bootstrap_servers=KAFKA_SERVER, 
     )
 
-def create_topics(topic_list) -> Boolean:
+def create_topics(topic_list) -> bool:
     success = True
     admin_client = __get_admin()
 
     try:
-        topicobject_list = [NewTopic(name=i.name, num_partitions=i.num_partitions, replication_factor=1) for i in topic_list]
+        topicobject_list = [NewTopic(name=i['name'], num_partitions=i['num_partitions'], replication_factor=1) for i in topic_list]
         admin_client.create_topics(new_topics=topicobject_list, validate_only=False)
         printsuccess(f'Created topics: {topic_list}')
-    except:
+    except Exception as e:
         printerror(f'Unable to create topics: {topic_list}')
         success = False
     finally:
