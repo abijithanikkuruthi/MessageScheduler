@@ -7,9 +7,10 @@ services:
     volumes: 
       - ./MessageHandler:/app
     ports:
-      - 8000-8100:8000
+      - 8000-8010:8000
     environment:
       - KAFKA_SERVER=192.168.28.46:9092
       - TZ=Europe/Amsterdam
       - DEBUG=False
+      - THREAD_COUNT=8
     restart: always

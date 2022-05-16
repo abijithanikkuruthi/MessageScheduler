@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 
 # Enable debugging for detailed logs
@@ -5,6 +6,9 @@ DEBUG = (os.getenv('DEBUG', 'False') == 'True')
 
 # KAFKA Settings
 KAFKA_SERVER = os.getenv('KAFKA_SERVER', 'localhost:9092')
+
+# Scheduled Message Worker Settings
+SM_WORKER_COUNT = int(os.getenv('THREAD_COUNT', multiprocessing.cpu_count()))
 
 # Scheduled Messages Topic Settings
 SM_TOPIC = 'SCHEDULED_MESSAGES'

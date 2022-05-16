@@ -2,7 +2,7 @@ import threading
 import multiprocessing
 from flask import Flask
 from common import get_bucket_list, printerror, printinfo, create_topics, get_config
-from config import SM_PARTITIONS_PER_BUCKET, SM_TOPIC, SM_TOPIC_PARTITIONS, CS_HOST, CS_PORT
+from config import SM_PARTITIONS_PER_BUCKET, SM_TOPIC, SM_TOPIC_PARTITIONS, CS_HOST, CS_PORT, SM_WORKER_COUNT
 from MessageHandler import MessageHandler
 
 class MessageHandlerThread(threading.Thread):
@@ -46,7 +46,7 @@ if __name__ == "__main__":
 
     # Start MessageHandlerThread
     MessageHandlerThreadList = []
-    for i in range(multiprocessing.cpu_count()):
+    for i in range(SM_WORKER_COUNT):
         mh_thread = MessageHandlerThread()
         mh_thread.start()
         MessageHandlerThreadList.append(mh_thread)
