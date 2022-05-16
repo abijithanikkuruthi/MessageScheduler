@@ -3,14 +3,8 @@ version: '3'
 services:
   messagehandler:
     build: ./MessageHandler
-    command: python3 main.py
+    image: abianik/messagehandler
     volumes: 
       - ./MessageHandler:/app
-    ports:
-      - 8000-8010:8000
     environment:
-      - KAFKA_SERVER=192.168.28.46:9092
-      - TZ=Europe/Amsterdam
-      - DEBUG=False
-      - THREAD_COUNT=8
-    restart: always
+      - KAFKA_SERVER=192.168.1.4:9092
