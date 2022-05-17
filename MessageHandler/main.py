@@ -29,13 +29,18 @@ def config_server():
 def setup():
     
     # setup scheduled messages topics for incoming messages
-    create_topics([{
-        'name' : SM_TOPIC,
-        'num_partitions' : SM_TOPIC_PARTITIONS
-    }])
+    #create_topics([{
+    #     'name' : SM_TOPIC,
+    #     'num_partitions' : SM_TOPIC_PARTITIONS
+    # }])
 
     # Setup topics for scheduled messages buckets
-    create_topics([ { 'name' : i, 'num_partitions' : SM_PARTITIONS_PER_BUCKET } for i in get_bucket_list() ])
+    #create_topics([ { 'name' : i, 'num_partitions' : SM_PARTITIONS_PER_BUCKET } for i in get_bucket_list() ])
+
+    # recieve CONFIG from scheduler_server_url
+
+    # TODO: Yet to be implement to retrieve config from SCHEDULER_SERVER
+    pass
 
 if __name__ == "__main__":
     
