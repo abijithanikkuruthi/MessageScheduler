@@ -3,8 +3,28 @@ import random
 import string
 from kafka.admin import KafkaAdminClient, NewTopic
 from config import DEBUG, KAFKA_SERVER, SM_BUCKET_TOPIC_FORMAT, SM_BUCKETS_MULTIPLICATION_RATIO, SM_MAXIUMUM_DELAY, SM_MINIUMUM_DELAY, SM_TIME_FORMAT, SM_TOPIC, SM_CONSUMER_GROUP_NAME
+import threading
+from contextlib import contextmanager
 
 CACHE = {}
+
+class TimeoutLock(object):
+    def __init__(self):
+        self._lock = threading.Lock()
+
+    def acquire(self, blocking=True, timeout=-1):
+        return self._lock.acquire(blocking, timeout)
+
+    @contextmanager
+    def acquire_timeout(self, timeout, message='TIMEOUT'):
+        result = self._lock.acquire(timeout=timeout)
+        yield result
+        if not result:
+            printerror(f'[CRITICAL][{message}] Job Queue Lock Timeout. Releasing Lock now.')
+        self._lock.release()
+
+    def release(self):
+        self._lock.release()
 
 class colors:
     HEADER = '\033[95m'
