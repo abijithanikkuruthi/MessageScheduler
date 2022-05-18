@@ -1,9 +1,9 @@
 from JobScheduler import JobScheduler
-from MessageHandler.common import printerror
-from common import getTime, TimeoutLock, printsuccess
+from common import getTime, TimeoutLock, printsuccess, printerror, printdebug
 from config import WORKER_STALE_TIME, WORKER_TIME_FORMAT, WORKER_SCHEDULER_FREQ, WORKER_LOCK_TIMEOUT, WORKER_STATUS_LIST
 import threading
 import time
+import copy
 from datetime import datetime
 
 class Worker:
@@ -11,14 +11,14 @@ class Worker:
     def __init__(self, worker) -> None: 
         self.worker_id = worker['worker_id']
         self.join_time = getTime(WORKER_TIME_FORMAT)
-        self.ip = getattr(worker, 'ip', '')
+        self.ip = worker.get('ip', '')
         self.update(worker)
 
     def update(self, worker) -> None:
         self.last_heartbeat = getTime(WORKER_TIME_FORMAT)
-        self.status = getattr(worker, 'status', WORKER_STATUS_LIST[0])
-        self.job_id = getattr(worker, 'job_id', None)
-        self.job = getattr(worker, 'job', None)
+        self.status = worker.get('status', WORKER_STATUS_LIST[0])
+        self.job_id = worker.get('job_id', '')
+        self.job = worker.get('job', {})
 
 class WorkerScheduler(threading.Thread):
 
@@ -34,7 +34,8 @@ class WorkerScheduler(threading.Thread):
         def __run():
             # Remove stale workers, mark associated jobs as error, call jobqueue trim()
             with WorkerScheduler.WQ_LOCK.acquire_timeout(WORKER_LOCK_TIMEOUT, 'WorkerScheduler.__run()') as acquired:
-                for worker_id, worker in WorkerScheduler.WORKER_QUEUE.items():
+                for worker_id in list(WorkerScheduler.WORKER_QUEUE):
+                    worker = WorkerScheduler.WORKER_QUEUE[worker_id]
                     time_diff = (datetime.now() - datetime.strptime(worker.last_heartbeat, WORKER_TIME_FORMAT)).total_seconds()
                     
                     if time_diff > WORKER_STALE_TIME:
@@ -46,9 +47,9 @@ class WorkerScheduler(threading.Thread):
 
         while True:
             try:
-                threading.Thread(target=__run()).start()
-            except:
-                printerror(f'WorkerScheduler.__run() failed in thread ID: {threading.get_native_id()}')
+                threading.Thread(target=__run).start()
+            except Exception as e:
+                printerror(f'WorkerScheduler.__run() failed in thread ID: {threading.get_native_id()}\n{str(e)}')
             finally:
                 time.sleep(WORKER_SCHEDULER_FREQ)
 
@@ -95,4 +96,37 @@ class WorkerScheduler(threading.Thread):
             with cls.WQ_LOCK.acquire_timeout(WORKER_LOCK_TIMEOUT, 'WorkerScheduler.update()') as acquired:
                 cls.WORKER_QUEUE[worker['worker_id']].update(worker)
 
-        return worker
+        with cls.WQ_LOCK.acquire_timeout(WORKER_LOCK_TIMEOUT, 'WorkerScheduler.update()') as acquired:
+            w_obj = copy.deepcopy(cls.WORKER_QUEUE[worker['worker_id']].__dict__)
+        
+        return w_obj
+
+if __name__=="__main__":
+
+    ws = WorkerScheduler()
+    js = JobScheduler()
+    ws.start()
+    
+    wkr = {
+        'worker_id': 'wkr1',
+        'status': 'READY',
+    }
+
+    wkr = WorkerScheduler.update(wkr)
+
+    print(wkr)
+
+    js.start()
+    
+    time.sleep(2)
+    wkr = WorkerScheduler.update(wkr)
+
+    print(wkr)
+
+    wkr['status'] = 'WORKING'
+    wkr = WorkerScheduler.update(wkr)
+    print(wkr)
+
+    wkr['status'] = 'DONE'
+    wkr = WorkerScheduler.update(wkr)
+    print(wkr)

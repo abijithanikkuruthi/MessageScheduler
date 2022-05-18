@@ -13,8 +13,6 @@ class Job:
         self.creation_time = getTime(JOB_TIME_FORMAT)
         self.status = JOB_STATUS_LIST[0]
         self.workers = []
-
-        printdebug(f'Job Created: {self.__dict__}')
     
     def start(self, worker_id) -> None:
         if worker_id not in self.workers:
