@@ -1,5 +1,5 @@
 from common import id_generator, getTime, printinfo, printerror, printsuccess, get_config, TimeoutLock
-from config import JOB_TIME_FORMAT, JOB_STATUS_LIST, SM_MINIUMUM_DELAY, JOB_LOCK_TIMEOUT
+from config import JOB_QUEUE_MAX_SIZE, JOB_TIME_FORMAT, JOB_STATUS_LIST, SM_MINIUMUM_DELAY, JOB_LOCK_TIMEOUT
 import threading
 import time
 import copy
@@ -127,6 +127,11 @@ class JobScheduler(threading.Thread):
             jq = copy.deepcopy(cls.JOB_QUEUE)
 
         return jq
+
+    @classmethod
+    def trim_job_queue(cls):
+        with cls.JQ_LOCK.acquire_timeout(JOB_LOCK_TIMEOUT, 'trim_job_queue()') as acquired:
+            cls.JOB_QUEUE = cls.JOB_QUEUE[:JOB_QUEUE_MAX_SIZE]
 
 if __name__=='__main__':
 
