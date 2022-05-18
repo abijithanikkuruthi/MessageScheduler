@@ -111,7 +111,7 @@ def create_topics(topic_list) -> bool:
         admin_client.create_topics(new_topics=topicobject_list, validate_only=False)
         printsuccess(f'Created topics: {topic_list}')
     except Exception as e:
-        printerror(f'Unable to create topics: {topic_list}')
+        printinfo(f'Unable to create topics: {topic_list} {str(e)}')
         success = False
     finally:
         admin_client.close()
