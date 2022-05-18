@@ -17,8 +17,8 @@ class Job:
         printdebug(f'Job Created: {self.__dict__}')
     
     def start(self, worker_id) -> None:
-        self.start_time = getTime(JOB_TIME_FORMAT)
-        self.workers.append(worker_id)
+        if worker_id not in self.workers:
+            self.workers.append(worker_id)
         self.status = JOB_STATUS_LIST[1]
 
         printdebug(f'Job Started by worker {worker_id}: {self.__dict__}')
@@ -88,14 +88,18 @@ class JobScheduler(threading.Thread):
         
     @classmethod
     def start_job(cls, job_id, worker_id):
+        job_obj = None
         def __start_job():
             for j in cls.JOB_QUEUE:
                 if j.job_id == job_id:
                     j.start(worker_id)
-                    break
+                    return copy.deepcopy(j.__dict__)
+            return None
 
         with cls.JQ_LOCK.acquire_timeout(JOB_LOCK_TIMEOUT, '__start_job()') as acquired:
-            __start_job()
+            job_obj = __start_job()
+        
+        return job_obj
 
     @classmethod
     def done_job(cls, job_id, worker_id):
@@ -131,7 +135,38 @@ class JobScheduler(threading.Thread):
     @classmethod
     def trim_job_queue(cls):
         with cls.JQ_LOCK.acquire_timeout(JOB_LOCK_TIMEOUT, 'trim_job_queue()') as acquired:
-            cls.JOB_QUEUE = cls.JOB_QUEUE[:JOB_QUEUE_MAX_SIZE]
+            cls.JOB_QUEUE = cls.JOB_QUEUE[-1 * JOB_QUEUE_MAX_SIZE:]
+
+    @classmethod
+    def add_worker(cls, worker_id):
+        ready_list = []
+        error_list = []
+        working_list = []
+        job_obj = None
+
+        with cls.JQ_LOCK.acquire_timeout(JOB_LOCK_TIMEOUT, 'add_worker()') as acquired:
+            for j in cls.JOB_QUEUE:
+                if j.status == JOB_STATUS_LIST[0]:
+                    ready_list.append(j)
+                elif j.status == JOB_STATUS_LIST[-1]:
+                    error_list.append(j)
+                elif j.status == JOB_STATUS_LIST[1]:
+                    working_list.append(j)
+
+            if len(ready_list) > 0:
+                job_obj = ready_list[0]
+                job_obj.start(worker_id)
+            elif len(error_list) > 0:
+                job_obj = error_list[0]
+                job_obj.start(worker_id)
+            elif len(working_list) > 0:
+                # choose job with least number of workers
+                job_obj = sorted(working_list, key= lambda j: len(j.workers))[0]
+                job_obj.start(worker_id)
+
+            return_obj = copy.deepcopy(job_obj.__dict__) if job_obj else None
+    
+        return return_obj
 
 if __name__=='__main__':
 
