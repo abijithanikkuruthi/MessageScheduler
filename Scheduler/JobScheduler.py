@@ -1,4 +1,4 @@
-from common import id_generator, getTime, printinfo, printerror, printsuccess, get_config, TimeoutLock
+from common import id_generator, getTime, printerror, printsuccess, get_config, printdebug, TimeoutLock
 from config import JOB_QUEUE_MAX_SIZE, JOB_TIME_FORMAT, JOB_STATUS_LIST, SM_MINIUMUM_DELAY, JOB_LOCK_TIMEOUT
 import threading
 import time
@@ -14,20 +14,20 @@ class Job:
         self.status = JOB_STATUS_LIST[0]
         self.workers = []
 
-        printinfo(f'Job Created: {self.__dict__}')
+        printdebug(f'Job Created: {self.__dict__}')
     
     def start(self, worker_id) -> None:
         self.start_time = getTime(JOB_TIME_FORMAT)
         self.workers.append(worker_id)
         self.status = JOB_STATUS_LIST[1]
 
-        printinfo(f'Job Started by worker {worker_id}: {self.__dict__}')
+        printdebug(f'Job Started by worker {worker_id}: {self.__dict__}')
 
     def done(self, worker_id) -> None:
         self.workers.remove(worker_id)
         self.status = JOB_STATUS_LIST[1]
 
-        printinfo(f'Job done by worker {worker_id}: {self.__dict__}')
+        printdebug(f'Job done by worker {worker_id}: {self.__dict__}')
 
         if len(self.workers) == 0:
             # Mark job as done if all workers are done
@@ -35,7 +35,7 @@ class Job:
             self.finish_time = getTime(JOB_TIME_FORMAT)
             self.status = JOB_STATUS_LIST[2]
 
-            printinfo(f'Job Done: {self.__dict__}')
+            printdebug(f'Job Done: {self.__dict__}')
 
     def error(self, worker_id) -> None:
         self.workers.remove(worker_id)
@@ -48,7 +48,7 @@ class Job:
 
 class JobScheduler(threading.Thread):
     JOB_QUEUE = []
-    JQ_LOCK = TimeoutLock()
+    JQ_LOCK = TimeoutLock('JOB_QUEUE_LOCK')
     
     def __init__(self):
         threading.Thread.__init__(self)
@@ -61,7 +61,7 @@ class JobScheduler(threading.Thread):
             'max_size' : config_obj['bucket_object_list'][-1]['lower']
         }
 
-        printinfo(f'Job Scheduler Config: {self.config}')
+        printdebug(f'Job Scheduler Config: {self.config}')
 
     def run(self):
         printsuccess(f'Job Scheduler Started in thread ID: {threading.get_native_id()}')
@@ -126,7 +126,7 @@ class JobScheduler(threading.Thread):
         with cls.JQ_LOCK.acquire_timeout(JOB_LOCK_TIMEOUT, 'get_job_queue()') as acquired:
             jq = copy.deepcopy(cls.JOB_QUEUE)
 
-        return jq
+        return [j.__dict__ for j in jq]
 
     @classmethod
     def trim_job_queue(cls):
@@ -140,7 +140,7 @@ if __name__=='__main__':
 
     time.sleep(2)
 
-    print(list(JobScheduler.JOB_QUEUE))
-    JobScheduler.start_job(JobScheduler.JOB_QUEUE[0].job_id, 'worker_id')
-    print(list(JobScheduler.JOB_QUEUE))
-    JobScheduler.done_job(JobScheduler.JOB_QUEUE[0].job_id, 'worker_id')
+    print(JobScheduler.get_job_queue())
+    JobScheduler.start_job(JobScheduler.get_job_queue()[0]['job_id'], 'worker_id')
+    print(JobScheduler.get_job_queue())
+    JobScheduler.done_job(JobScheduler.get_job_queue()[0]['job_id'], 'worker_id')

@@ -9,18 +9,19 @@ from contextlib import contextmanager
 CACHE = {}
 
 class TimeoutLock(object):
-    def __init__(self):
+    def __init__(self, lock_name: str):
         self._lock = threading.Lock()
+        self.name = lock_name
 
     def acquire(self, blocking=True, timeout=-1):
         return self._lock.acquire(blocking, timeout)
 
     @contextmanager
-    def acquire_timeout(self, timeout, message='TIMEOUT'):
+    def acquire_timeout(self, timeout: int, message: str):
         result = self._lock.acquire(timeout=timeout)
         yield result
         if not result:
-            printerror(f'[CRITICAL][{message}] Job Queue Lock Timeout. Releasing Lock now.')
+            printerror(f'[CRITICAL][{self.lock_name}] Lock Timeout. Releasing Lock now. {message}')
         self._lock.release()
 
     def release(self):
@@ -47,15 +48,18 @@ def printsuccess(message):
     print(f'{colors.OKGREEN}[OK][{getTime()}] {message}{colors.ENDC}')
 
 def printinfo(message):
+    print(f'[INFO][{getTime()}] {message}')
+
+def printdebug(message):
     if DEBUG:
-        print(f'[INFO][{getTime()}] {message}')
+        print(f'[DEBUG][{getTime()}] {message}')
 
 def get_bucket_list():
     
     if CACHE and CACHE.get('bucket_list'):
         return CACHE['bucket_list']
 
-    printinfo('Building bucket list')
+    printdebug('Building bucket list')
     
     bucket_list = []
     bucket_object_list = []
