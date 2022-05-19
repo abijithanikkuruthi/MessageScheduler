@@ -8,3 +8,13 @@ services:
       - ./MessageHandler:/app
     environment:
       - KAFKA_SERVER=192.168.28.46:9092
+  
+  scheduler:
+    build: ./Scheduler
+    image: abianik/scheduler
+    volumes: 
+      - ./Scheduler:/app
+    ports:
+      - 8000:8000
+    environment:
+      - KAFKA_SERVER=192.168.28.46:9092
