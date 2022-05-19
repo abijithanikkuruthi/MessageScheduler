@@ -13,6 +13,8 @@ class Job:
         self.creation_time = getTime(JOB_TIME_FORMAT)
         self.status = JOB_STATUS_LIST[0]
         self.workers = []
+
+        printdebug(f'Job Created: {self.__dict__}')
     
     def start(self, worker_id) -> None:
         if worker_id not in self.workers:
@@ -64,24 +66,29 @@ class JobScheduler(threading.Thread):
     def run(self):
         printsuccess(f'Job Scheduler Started in thread ID: {threading.get_native_id()}')
 
-        def __assign_jobs():
-            def __filter_jobs(j):
-                return j['lower'] <= self.job_stage and (self.job_stage % j['lower'] == 0)
+        def __run():
+            printdebug(f'Job Scheduler CronJob Running in thread ID: {threading.get_native_id()}')
 
-            if self.job_stage == 0:
-                job_list = self.config['bucket_object_list']
-            else:
-                job_list = filter(__filter_jobs, self.config['bucket_object_list'])
+            def __assign_jobs():
+                def __filter_jobs(j):
+                    return j['lower'] <= self.job_stage and (self.job_stage % j['lower'] == 0)
+
+                if self.job_stage == 0:
+                    job_list = self.config['bucket_object_list']
+                else:
+                    job_list = filter(__filter_jobs, self.config['bucket_object_list'])
+                
+                self.job_stage = (self.job_stage + self.config['min_size']) % self.config['max_size']
+
+                job_object_list = [Job(i) for i in job_list]
+
+                with JobScheduler.JQ_LOCK.acquire_timeout(JOB_LOCK_TIMEOUT, 'JobScheduler') as acquired:
+                    JobScheduler.JOB_QUEUE = JobScheduler.JOB_QUEUE + job_object_list
             
-            self.job_stage = (self.job_stage + self.config['min_size']) % self.config['max_size']
-
-            job_object_list = [Job(i) for i in job_list]
-
-            with JobScheduler.JQ_LOCK.acquire_timeout(JOB_LOCK_TIMEOUT, 'JobScheduler') as acquired:
-                JobScheduler.JOB_QUEUE = JobScheduler.JOB_QUEUE + job_object_list
+            __assign_jobs()
 
         while True:
-            threading.Thread(target=__assign_jobs).start()
+            threading.Thread(target=__run).start()
             time.sleep(self.config['min_size'])
         
     @classmethod
@@ -131,7 +138,9 @@ class JobScheduler(threading.Thread):
         return [j.__dict__ for j in jq]
 
     @classmethod
-    def trim_job_queue(cls):
+    def trim_job_queue(cls, worker_queue):
+        # TODO: Implement trimming of workers in job object with worker_queue
+        
         with cls.JQ_LOCK.acquire_timeout(JOB_LOCK_TIMEOUT, 'trim_job_queue()') as acquired:
             cls.JOB_QUEUE = cls.JOB_QUEUE[-1 * JOB_QUEUE_MAX_SIZE:]
 

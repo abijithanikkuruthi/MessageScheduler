@@ -32,6 +32,8 @@ class WorkerScheduler(threading.Thread):
         printsuccess(f'WorkerScheduler Started in thread ID: {threading.get_native_id()}')
 
         def __run():
+            printdebug(f'WorkerScheduler CronJob Started in thread ID: {threading.get_native_id()}')
+
             # Remove stale workers, mark associated jobs as error, call jobqueue trim()
             with WorkerScheduler.WQ_LOCK.acquire_timeout(WORKER_LOCK_TIMEOUT, 'WorkerScheduler.__run()') as acquired:
                 for worker_id in list(WorkerScheduler.WORKER_QUEUE):
@@ -39,17 +41,19 @@ class WorkerScheduler(threading.Thread):
                     time_diff = (datetime.now() - datetime.strptime(worker.last_heartbeat, WORKER_TIME_FORMAT)).total_seconds()
                     
                     if time_diff > WORKER_STALE_TIME:
+                        printerror(f'Worker {worker_id} is stale, removing from queue')
                         if worker.job_id:
                             JobScheduler.error_job(worker.job_id, worker_id)
                         del WorkerScheduler.WORKER_QUEUE[worker_id]
-            
-            JobScheduler.trim_job_queue()
+
+                wq_copy = { k:v.__dict__ for k, v in copy.deepcopy(WorkerScheduler.WORKER_QUEUE).items() }
+                JobScheduler.trim_job_queue(wq_copy)
 
         while True:
             try:
                 threading.Thread(target=__run).start()
             except Exception as e:
-                printerror(f'WorkerScheduler.__run() failed in thread ID: {threading.get_native_id()}\n{str(e)}')
+                printerror(f'WorkerScheduler.__run() failed in thread ID: {threading.get_native_id()} - {str(e)}')
             finally:
                 time.sleep(WORKER_SCHEDULER_FREQ)
 
@@ -100,6 +104,23 @@ class WorkerScheduler(threading.Thread):
             w_obj = copy.deepcopy(cls.WORKER_QUEUE[worker['worker_id']].__dict__)
         
         return w_obj
+    
+    @classmethod
+    def get_worker_queue(cls):
+        with cls.WQ_LOCK.acquire_timeout(WORKER_LOCK_TIMEOUT, 'WorkerScheduler.get_worker_queue()') as acquired:
+            w_queue = copy.deepcopy(cls.WORKER_QUEUE)
+        for worker_id in w_queue:
+            w_queue[worker_id] = w_queue[worker_id].__dict__
+        return w_queue
+    
+    @classmethod
+    def get_job_id(cls, worker_id):
+        job_id = None
+        with cls.WQ_LOCK.acquire_timeout(WORKER_LOCK_TIMEOUT, 'WorkerScheduler.get_job_id()') as acquired:
+            if worker_id in cls.WORKER_QUEUE:
+                job_id = copy.deepcopy(cls.WORKER_QUEUE[worker_id].job_id)
+
+        return job_id
 
 if __name__=="__main__":
 
