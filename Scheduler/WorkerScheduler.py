@@ -20,6 +20,9 @@ class Worker:
         self.job_id = worker.get('job_id', '')
         self.job = worker.get('job', {})
 
+    def poll(self):
+        self.last_heartbeat = getTime(WORKER_TIME_FORMAT)
+
 class WorkerScheduler(threading.Thread):
 
     WORKER_QUEUE = {}
@@ -124,6 +127,17 @@ class WorkerScheduler(threading.Thread):
                 job_id = copy.deepcopy(cls.WORKER_QUEUE[worker_id].job_id)
 
         return job_id
+    
+    @classmethod
+    def get_worker(cls, worker):
+        with cls.WQ_LOCK.acquire_timeout(WORKER_LOCK_TIMEOUT, 'WorkerScheduler.get_worker()') as acquired:
+            if worker['worker_id'] not in cls.WORKER_QUEUE.keys():
+                cls.WORKER_QUEUE[worker['worker_id']] = Worker(worker)
+            else:
+                cls.WORKER_QUEUE[worker['worker_id']].poll()
+            worker = copy.deepcopy(cls.WORKER_QUEUE[worker['worker_id']].__dict__)
+
+        return worker
 
 if __name__=="__main__":
 

@@ -1,62 +1,73 @@
 from JobScheduler import JobScheduler
 from WorkerScheduler import WorkerScheduler
-from config import SM_MAXIUMUM_DELAY, SM_MINIUMUM_DELAY, SM_TIME_FORMAT, SM_TOPIC, SM_TOPIC_PARTITIONS, SM_PARTITIONS_PER_BUCKET, SERVER_HOST, SERVER_PORT, KAFKA_SERVER, SM_CONSUMER_GROUP_NAME, SM_BUCKETS_MULTIPLICATION_RATIO, SM_BUCKET_TOPIC_FORMAT, SM_MH_THREAD_COUNT
-from common import id_generator, get_bucket_list, get_bucket_object_list
+from config import *
+from common import get_bucket_list, get_bucket_object_list, printerror
+import json
 
+# HTTP Server for Schedule Job Handling
 class ScheduleServer:
     def __init__(self):
         pass
 
     @classmethod
-    def req_index(self, request):
+    def req_index(cls, request):
         return {
-            'status' : 'OK',
+            'status' :  'OK',
             'message' : 'ScheduleServer is running',
         }
 
     @classmethod
-    def req_config(self, request):
+    def req_config(cls, request):
         return {
-            'sm_topic' : SM_TOPIC,
-            'sm_topic_partitions' : SM_TOPIC_PARTITIONS,
-            'sm_partitions_per_bucket' : SM_PARTITIONS_PER_BUCKET,
-            'bucket_list' : get_bucket_list(),
-            'bucket_object_list' : get_bucket_object_list(),
-            'kafka_server' : KAFKA_SERVER,
-            'sm_consumer_group_name' : SM_CONSUMER_GROUP_NAME,
-            'sm_time_format' : SM_TIME_FORMAT,
-            'sm_miniumum_delay' : SM_MINIUMUM_DELAY,
-            'sm_maximum_delay' : SM_MAXIUMUM_DELAY,
-            'sm_buckets_multiplication_ratio' : SM_BUCKETS_MULTIPLICATION_RATIO,
-            'sm_partitions_per_bucket' : SM_PARTITIONS_PER_BUCKET,
-            'sm_bucket_topic_format' : SM_BUCKET_TOPIC_FORMAT,
-            'sm_mh_thread_count' : SM_MH_THREAD_COUNT,
+            'sm_topic' :                            SM_TOPIC,
+            'sm_topic_partitions' :                 SM_TOPIC_PARTITIONS,
+            'sm_partitions_per_bucket' :            SM_PARTITIONS_PER_BUCKET,
+            'bucket_list' :                         get_bucket_list(),
+            'bucket_object_list' :                  get_bucket_object_list(),
+            'kafka_server' :                        KAFKA_SERVER,
+            'sm_consumer_group_name' :              SM_CONSUMER_GROUP_NAME,
+            'sm_time_format' :                      SM_TIME_FORMAT,
+            'sm_miniumum_delay' :                   SM_MINIUMUM_DELAY,
+            'sm_maximum_delay' :                    SM_MAXIUMUM_DELAY,
+            'sm_buckets_multiplication_ratio' :     SM_BUCKETS_MULTIPLICATION_RATIO,
+            'sm_partitions_per_bucket' :            SM_PARTITIONS_PER_BUCKET,
+            'sm_bucket_topic_format' :              SM_BUCKET_TOPIC_FORMAT,
+            'sm_mh_thread_count' :                  SM_MH_THREAD_COUNT,
+
+            'worker_status_list' :                  WORKER_STATUS_LIST,
+            'worker_thread_count' :                 WORKER_THREAD_COUNT,
+            'worker_ready_poll_freq' :              WORKER_READY_POLL_FREQ,
+            'worker_working_poll_freq' :            WORKER_WORKING_POLL_FREQ,
         }
 
     @classmethod
-    def req_worker(self, request):
-        if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
-            ip_addr = request.environ['REMOTE_ADDR']
+    def req_worker(cls, request, worker_id):
+        if request.method == 'POST':
+            try:
+                data = json.loads(request.data)
+                data['ip'] = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', 'unknown'))
+                
+                return WorkerScheduler.update(data)
+            except Exception as e:
+                printerror(f'{e}')
+                return {
+                    'status' :  'ERROR',
+                    'message' : 'Worker status update failed',
+                }
         else:
-            ip_addr = request.environ['HTTP_X_FORWARDED_FOR']
-        
-        wkr = {
-            'ip_addr' : ip_addr,
-            'worker_id' : id_generator(),
-            'status': 'READY',
-        }
-
-        wkr = WorkerScheduler.update(wkr)
-        return wkr
+            return WorkerScheduler.get_worker({
+                'worker_id' : worker_id,
+                'ip'        : request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', 'unknown'))
+            })
     
     @classmethod
-    def api_jq(self, request):
+    def api_jq(cls, request):
         return {
             'job_queue' : JobScheduler.get_job_queue()
         }
 
     @classmethod
-    def api_wq(self, request):
+    def api_wq(cls, request):
         return {
             'worker_queue' : WorkerScheduler.get_worker_queue()
         }

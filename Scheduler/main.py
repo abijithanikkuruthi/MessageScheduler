@@ -25,9 +25,9 @@ def req_index():
 def req_config():
     return ScheduleServer.req_config(request)
 
-@app.route('/worker', methods=['GET', 'POST'])
-def req_worker():
-    return ScheduleServer.req_worker(request)
+@app.route('/worker/<worker_id>', methods=['GET', 'POST'])
+def req_worker(worker_id):
+    return ScheduleServer.req_worker(request, worker_id)
 
 @app.route('/api/jq', methods=['GET'])
 def api_jq():
