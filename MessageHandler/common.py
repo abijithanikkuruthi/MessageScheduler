@@ -1,6 +1,6 @@
+from constants import DEBUG, REQUEST_ERROR_WAIT_TIME, SCHEDULER_SERVER_URL, REQUEST_COUNT_LIMIT
+import requests
 import time
-from kafka.admin import KafkaAdminClient, NewTopic
-from config import DEBUG, KAFKA_SERVER, SM_BUCKET_TOPIC_FORMAT, SM_BUCKETS_MULTIPLICATION_RATIO, SM_MAXIUMUM_DELAY, SM_MINIUMUM_DELAY, SM_TIME_FORMAT, SM_TOPIC, SM_CONSUMER_GROUP_NAME
 
 CACHE = {}
 
@@ -15,6 +15,37 @@ class colors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+class Config:
+    CONFIG = {}
+    CONFIG_URL = SCHEDULER_SERVER_URL + '/config'
+
+    def __init__(self):
+        if not Config.CONFIG:
+            Config.update()
+        return Config.CONFIG
+    
+    @classmethod
+    def update(cls):
+        while True:
+            try:
+                cls.CONFIG = get_json_from_url(cls.CONFIG_URL)
+                printsuccess(f'Config updated from {cls.CONFIG_URL}')
+                cls.CONFIG['last_update'] = getTime()
+                cls.CONFIG['bucket_object_list'] = sorted(cls.CONFIG['bucket_object_list'], key=lambda k: k['lower'])
+                printinfo(f'Config: {cls.CONFIG}')
+                break
+            except Exception as e:
+                printerror(f'Failed to get config from {Config.CONFIG_URL}: {e}')
+                time.sleep(REQUEST_ERROR_WAIT_TIME)
+    
+    @classmethod
+    def get(cls, key=None):
+        if not cls.CONFIG:
+            cls.update()
+        if key:
+            return cls.CONFIG[key]
+        return cls.CONFIG
+
 def getTime():
     return time.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -25,88 +56,37 @@ def printsuccess(message):
     print(f'{colors.OKGREEN}[OK][{getTime()}] {message}{colors.ENDC}')
 
 def printinfo(message):
+    print(f'[INFO][{getTime()}] {message}')
+
+def printheader(message):
+    print(f'{colors.HEADER}[HEADER] {message}{colors.ENDC}')
+
+def printdebug(message):
     if DEBUG:
-        print(f'[INFO][{getTime()}] {message}')
+        print(f'{colors.OKBLUE}[DEBUG][{getTime()}] {message}{colors.ENDC}')
 
-def get_bucket_list():
-    
-    if CACHE and CACHE.get('bucket_list'):
-        return CACHE['bucket_list']
+def send_response_from_url(url, req_type, data):
+    req_count = 0
+    while req_count < REQUEST_COUNT_LIMIT:
+        req_count = req_count + 1
+        try:
+            printdebug(f'[{req_type}] {url}')
+            if req_type=='GET':
+                r = requests.get(url)
+            elif req_type=='POST':
+                r = requests.post(url, json=data)
+            return r
+        except:
+            printerror(f'Unable to connect to {url}. Retrying...')
+            time.sleep(REQUEST_ERROR_WAIT_TIME)
+    return False
 
-    printinfo('Building bucket list')
-    
-    bucket_list = []
-    bucket_object_list = []
-    bucket_lower_limit = SM_MINIUMUM_DELAY
+def get_response_from_url(url):
+    return send_response_from_url(url, 'GET', {})
 
-    while bucket_lower_limit < SM_MAXIUMUM_DELAY:
-        bucket_upper_limit = bucket_lower_limit * SM_BUCKETS_MULTIPLICATION_RATIO
-        b_name = SM_BUCKET_TOPIC_FORMAT.replace('$start$', str(bucket_lower_limit)).replace('$end$', str(bucket_upper_limit))
-        bucket_list.append(b_name)
-        bucket_object_list.append({
-            'name' : b_name,
-            'lower' : bucket_lower_limit,
-            'upper' : bucket_upper_limit
-        })
+def get_json_from_url(url):
+    response = get_response_from_url(url)
+    return response.json()
 
-        bucket_lower_limit = bucket_upper_limit
-    
-    b_name = SM_BUCKET_TOPIC_FORMAT.replace('$start$', str(bucket_lower_limit)).replace('$end$', '0')
-    bucket_list.append(b_name)
-    bucket_object_list.append({
-        'name' : b_name,
-        'lower' : bucket_lower_limit,
-        'upper' : bucket_upper_limit
-    })
-
-    CACHE['bucket_list'] = bucket_list
-    CACHE['bucket_object_list'] = bucket_object_list
-
-    return bucket_list
-
-def get_bucket_object_list():
-    if CACHE and CACHE.get('bucket_object_list'):
-        return CACHE['bucket_object_list']
-    else:
-        get_bucket_list()
-
-    return CACHE['bucket_object_list']
-
-def __get_admin():
-    return KafkaAdminClient(
-        bootstrap_servers=KAFKA_SERVER, 
-    )
-
-def create_topics(topic_list) -> bool:
-    success = True
-    admin_client = __get_admin()
-    try:
-        topicobject_list = [NewTopic(name=i['name'], num_partitions=i['num_partitions'], replication_factor=1) for i in topic_list]
-        admin_client.create_topics(new_topics=topicobject_list, validate_only=False)
-        printsuccess(f'Created topics: {topic_list}')
-    except Exception as e:
-        printerror(f'Unable to create topics: {topic_list}')
-        success = False
-    finally:
-        admin_client.close()
-    
-    return success
-
-def get_config():
-    if CACHE and CACHE.get('config'):
-        return CACHE['config']
-
-    cfg_obj = {
-        'kafka_server' : KAFKA_SERVER,
-        'bucket_list' : get_bucket_list(),
-        'sm_topic' : SM_TOPIC,
-        'group' : SM_CONSUMER_GROUP_NAME,
-        'time_format' : SM_TIME_FORMAT,
-        'bucket_object_list' : get_bucket_object_list()
-    }
-
-    CACHE['config'] = cfg_obj
-    return cfg_obj
-
-if __name__ == "__main__":
-    print(get_bucket_list())
+if __name__=="__main__":
+    print(Config.get())

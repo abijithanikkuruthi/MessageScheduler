@@ -1,17 +1,17 @@
+from common import Config, printerror, printsuccess, printdebug
 from kafka import KafkaConsumer, KafkaProducer
 from json import loads, dumps
-from common import printinfo, printerror, get_bucket_object_list, printsuccess
 from datetime import datetime
+import threading
 
 class MessageHandler:
-    workers = 0
+    threads = 0
 
     def __init__(self):
-        self.worker_id = MessageHandler.workers
-        self.bucket_list = get_bucket_object_list()
-        MessageHandler.workers = MessageHandler.workers + 1
+        self.thread_id = MessageHandler.threads
+        MessageHandler.threads = MessageHandler.threads + 1
     
-    def run(self, config):
+    def run(self):
         def __get_topic(headers_tuple):
             try:
                 headers = dict((k, v.decode('utf-8')) for k, v in headers_tuple)
@@ -20,14 +20,14 @@ class MessageHandler:
                 if (not headers['time']):
                     return headers['topic']
 
-                time_diff = (datetime.strptime(headers['time'], config['time_format']) - datetime.now()).total_seconds()
+                time_diff = (datetime.strptime(headers['time'], Config.get('sm_time_format')) - datetime.now()).total_seconds()
                 
                 # If the message is scheduled for a time too small to bucket, we send it to the provided topic
-                if time_diff < self.bucket_list[0]['lower']:
+                if time_diff < Config.get('sm_miniumum_delay'):
                     return headers['topic']
                 
                 # If the message is scheduled for the future, then we need to bucket it
-                for bucket in reversed(self.bucket_list):
+                for bucket in reversed(Config.get('bucket_object_list')):
                     if time_diff > bucket['lower']:
                         return bucket['name']
 
@@ -39,21 +39,25 @@ class MessageHandler:
 
         while True:
             try:
-                printsuccess(f'Starting worker: {self.worker_id}')
+                printsuccess(f'Starting thread: {self.thread_id}, PID: {threading.get_native_id()}')
 
                 consumer = KafkaConsumer(
-                    config['sm_topic'],
-                    bootstrap_servers=[config['kafka_server']],
+                    Config.get('sm_topic'),
+                    bootstrap_servers=[Config.get('kafka_server')],
                     auto_offset_reset='earliest',
                     enable_auto_commit=True,
-                    group_id=config['group'],
+                    group_id=Config.get('sm_consumer_group_name'),
                     value_deserializer=lambda x: loads(x.decode('utf-8')))
                 
-                producer = KafkaProducer(bootstrap_servers=[config['kafka_server']],
+                producer = KafkaProducer(bootstrap_servers=[Config.get('kafka_server')],
                     value_serializer=lambda x: dumps(x).encode('utf-8'))
                 
                 for message in consumer:
                     topic = __get_topic(getattr(message, 'headers', None))
+                    
+                    # printdebug(f'MessageHandler.run(): Topic: {topic}')
+                    # printdebug(f'MessageHandler.run(): Message: {message.value}')
+
                     if topic:
                         producer.send(
                             topic   = topic,
@@ -63,10 +67,9 @@ class MessageHandler:
                         )
             except Exception as e:
                 printerror(e)
-                printerror(f'Worker {self.worker_id} terminated. Restarting...')
+                printerror(f'Worker {self.thread_id} terminated. Restarting...')
 
 if __name__ == '__main__':
-    from common import get_config
 
     mh = MessageHandler()
-    mh.run(get_config())
+    mh.run()

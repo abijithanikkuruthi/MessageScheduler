@@ -50,6 +50,9 @@ def printsuccess(message):
 def printinfo(message):
     print(f'[INFO][{getTime()}] {message}')
 
+def printwarning(message):
+    print(f'{colors.WARNING}[WARNING][{getTime()}] {message}{colors.ENDC}')
+    
 def printdebug(message):
     if DEBUG:
         print(f'[DEBUG][{getTime()}] {message}')
