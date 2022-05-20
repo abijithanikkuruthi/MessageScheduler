@@ -7,7 +7,7 @@ services:
     volumes: 
       - ./MessageHandler:/app
     environment:
-      - KAFKA_SERVER=192.168.28.46:9092
+      - SCHEDULER_SERVER_URL=http://scheduler:8000
   
   scheduler:
     build: ./Scheduler

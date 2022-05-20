@@ -37,14 +37,14 @@ class WorkerScheduler(threading.Thread):
             # Remove stale workers, mark associated jobs as error, call jobqueue trim()
             with WorkerScheduler.WQ_LOCK.acquire_timeout(WORKER_LOCK_TIMEOUT, 'WorkerScheduler.__run()') as acquired:
                 if len(WorkerScheduler.WORKER_QUEUE) == 0:
-                    printwarning(f'WorkerScheduler.__run(): No workers in queue')
+                    printwarning(f'WorkerScheduler.__run(): No Workers Available')
                     
                 for worker_id in list(WorkerScheduler.WORKER_QUEUE):
                     worker = WorkerScheduler.WORKER_QUEUE[worker_id]
                     time_diff = (datetime.now() - datetime.strptime(worker.last_heartbeat, WORKER_TIME_FORMAT)).total_seconds()
                     
                     if time_diff > WORKER_STALE_TIME:
-                        printerror(f'Worker {worker_id} is stale, removing from queue')
+                        printerror(f'Worker: {worker_id} is stale, removing from Worker Queue')
                         if worker.job_id:
                             JobScheduler.error_job(worker.job_id, worker_id)
                         del WorkerScheduler.WORKER_QUEUE[worker_id]
