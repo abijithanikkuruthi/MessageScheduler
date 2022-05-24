@@ -1,22 +1,20 @@
+import multiprocessing
 import threading
 from MessageHandler import MessageHandler
-from common import Config, printheader
+from common import Config, printdebug, printheader
 
-class MessageHandlerThread(threading.Thread):
+class MessageHandlerProcess(multiprocessing.Process):
     def __init__(self):
-        threading.Thread.__init__(self)
-        self.mh = MessageHandler()
+        multiprocessing.Process.__init__(self)
 
     def run(self):
-        self.mh.run()
+        printdebug(f'MessageHandlerProcess.run(): Starting MessageHandlerProcess {threading.get_native_id()}')
+        for _ in range(Config.get('sm_mh_thread_count')):
+            threading.Thread(target=MessageHandler().run).start()
 
 if __name__ == "__main__":
     
     printheader("MessageScheduler Service")
 
-    # Start MessageHandlerThread
-    MessageHandlerThreadList = []
-    for _ in range(Config.get('sm_mh_thread_count')):
-        mh_thread = MessageHandlerThread()
-        mh_thread.start()
-        MessageHandlerThreadList.append(mh_thread)
+    for _ in range(Config.get('sm_mh_process_count')):
+        MessageHandlerProcess().start()

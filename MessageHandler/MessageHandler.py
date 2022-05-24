@@ -1,4 +1,4 @@
-from common import Config, printerror, printsuccess, printdebug
+from common import Config, getTime, printerror, printsuccess, printdebug
 from kafka import KafkaConsumer, KafkaProducer
 from json import loads, dumps
 from datetime import datetime
@@ -39,8 +39,6 @@ class MessageHandler:
 
         while True:
             try:
-                printsuccess(f'Starting thread: {self.thread_id}, PID: {threading.get_native_id()}')
-
                 consumer = KafkaConsumer(
                     Config.get('sm_topic'),
                     bootstrap_servers=[Config.get('kafka_server')],
@@ -57,6 +55,7 @@ class MessageHandler:
                     
                     # printdebug(f'MessageHandler.run(): Topic: {topic}')
                     # printdebug(f'MessageHandler.run(): Message: {message.value}')
+                    message.value['__sm_mh_time'] = getTime()
 
                     if topic:
                         producer.send(
@@ -65,6 +64,8 @@ class MessageHandler:
                             key     = getattr(message, 'key', None),
                             headers = getattr(message, 'headers', None)
                         )
+                    else:
+                        printerror(f'Unable to get topic name from headers: {message}')
             except Exception as e:
                 printerror(e)
                 printerror(f'Worker {self.thread_id} terminated. Restarting...')
