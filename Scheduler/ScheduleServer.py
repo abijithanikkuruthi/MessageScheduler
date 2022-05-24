@@ -33,11 +33,15 @@ class ScheduleServer:
             'sm_partitions_per_bucket' :            SM_PARTITIONS_PER_BUCKET,
             'sm_bucket_topic_format' :              SM_BUCKET_TOPIC_FORMAT,
             'sm_mh_thread_count' :                  SM_MH_THREAD_COUNT,
+            'sm_mh_process_count' :                 SM_MH_PROCESS_COUNT,
 
             'worker_status_list' :                  WORKER_STATUS_LIST,
             'worker_thread_count' :                 WORKER_THREAD_COUNT,
             'worker_ready_poll_freq' :              WORKER_READY_POLL_FREQ,
             'worker_working_poll_freq' :            WORKER_WORKING_POLL_FREQ,
+            'worker_consumer_timeout_ms' :          WORKER_CONSUMER_TIMEOUT_MS,
+            'sm_header_job_id_key' :                SM_HEADER_JOB_ID_KEY,
+            'worker_process_count' :                WORKER_PROCESS_COUNT,
         }
 
     @classmethod

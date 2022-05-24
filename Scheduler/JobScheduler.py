@@ -157,7 +157,7 @@ class JobScheduler(threading.Thread):
                     ready_list.append(j)
                 elif j.status == JOB_STATUS_LIST[-1]:
                     error_list.append(j)
-                elif j.status == JOB_STATUS_LIST[1]:
+                elif j.status == JOB_STATUS_LIST[1] and len(j.workers) == 0:
                     working_list.append(j)
 
             if len(ready_list) > 0:

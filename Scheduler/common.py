@@ -21,7 +21,7 @@ class TimeoutLock(object):
         result = self._lock.acquire(timeout=timeout)
         yield result
         if not result:
-            printerror(f'[CRITICAL][{self.lock_name}] Lock Timeout. Releasing Lock now. {message}')
+            printerror(f'[CRITICAL][{self.name}] Lock Timeout. Releasing Lock now. {message}')
         self._lock.release()
 
     def release(self):
