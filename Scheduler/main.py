@@ -1,6 +1,6 @@
 import time
 from common import create_topics, get_bucket_list, printdebug
-from config import SM_TOPIC, SM_TOPIC_PARTITIONS, SM_PARTITIONS_PER_BUCKET, SERVER_HOST, SERVER_PORT
+from constants import SM_TOPIC, SM_TOPIC_PARTITIONS, SM_PARTITIONS_PER_BUCKET, SERVER_HOST, SERVER_PORT
 from flask import Flask, request
 from JobScheduler import JobScheduler
 from WorkerScheduler import WorkerScheduler
@@ -43,6 +43,10 @@ def api_jq():
 @app.route('/api/wq', methods=['GET'])
 def api_wq():
     return ScheduleServer.api_wq(request)
+
+@app.route('/api/job_log', methods=['GET'])
+def api_job_log():
+    return ScheduleServer.api_job_log(request)
 
 def start_services():
     

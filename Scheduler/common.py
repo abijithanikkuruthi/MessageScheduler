@@ -1,8 +1,7 @@
 import time
-import random
-import string
+import uuid
 from kafka.admin import KafkaAdminClient, NewTopic
-from config import DEBUG, KAFKA_SERVER, SM_BUCKET_TOPIC_FORMAT, SM_BUCKETS_MULTIPLICATION_RATIO, SM_MAXIUMUM_DELAY, SM_MINIUMUM_DELAY, SM_TIME_FORMAT, SM_TOPIC, SM_CONSUMER_GROUP_NAME
+from constants import *
 import threading
 from contextlib import contextmanager
 
@@ -121,24 +120,8 @@ def create_topics(topic_list) -> bool:
     
     return success
 
-def get_config():
-    if CACHE and CACHE.get('config'):
-        return CACHE['config']
-
-    cfg_obj = {
-        'kafka_server' : KAFKA_SERVER,
-        'bucket_list' : get_bucket_list(),
-        'bucket_object_list' : get_bucket_object_list(),
-        'sm_topic' : SM_TOPIC,
-        'group' : SM_CONSUMER_GROUP_NAME,
-        'sm_time_format' : SM_TIME_FORMAT,
-    }
-
-    CACHE['config'] = cfg_obj
-    return cfg_obj
-
-def id_generator(size=24, chars=string.ascii_lowercase + string.digits):
-    return ''.join(random.choice(chars) for _ in range(size))
+def id_generator():
+    return str(uuid.uuid4())
 
 if __name__ == "__main__":
     print(get_bucket_list())

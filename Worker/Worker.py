@@ -2,9 +2,6 @@ import threading
 import multiprocessing
 from datetime import datetime
 from common import Config, printheader, printsuccess, printdebug, printerror, getTime, excpetion_info
-import time
-# from kafka import KafkaConsumer, KafkaProducer, TopicPartition, OffsetAndMetadata
-from json import loads, dumps
 from confluent_kafka import Consumer, Producer, TopicPartition
 
 worker_success_value = multiprocessing.Value('i', 0)
@@ -128,10 +125,10 @@ class Worker(multiprocessing.Process):
         for t in TaskProcessList:
             t.join()
         
-        self.task['status'] = Config.get('worker_status_list')[2]
+        self.task['status'] = Config.get('worker_status_list.done')
         
         if not worker_success_value.value:
-            self.task['status'] = Config.get('worker_status_list')[-1]
+            self.task['status'] = Config.get('worker_status_list.error')
             printerror(f'Worker.run(): Worker failed {self.task}')
         
         self.worker_handler.post_worker(self.task)

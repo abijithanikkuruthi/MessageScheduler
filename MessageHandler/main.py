@@ -6,15 +6,17 @@ from common import Config, printdebug, printheader
 class MessageHandlerProcess(multiprocessing.Process):
     def __init__(self):
         multiprocessing.Process.__init__(self)
+        self.mh = MessageHandler()
 
     def run(self):
-        printdebug(f'MessageHandlerProcess.run(): Starting MessageHandlerProcess {threading.get_native_id()}')
-        for _ in range(Config.get('sm_mh_thread_count')):
-            threading.Thread(target=MessageHandler().run).start()
+        self.mh.run()
 
 if __name__ == "__main__":
-    
-    printheader("MessageScheduler Service")
 
+    pid_list = []
     for _ in range(Config.get('sm_mh_process_count')):
-        MessageHandlerProcess().start()
+        p = MessageHandlerProcess()
+        p.start()
+        pid_list.append(p.pid)
+    
+    printheader("\nMessageScheduler Service started in " + str(len(pid_list)) + " processes.\nPIDs: " + str(pid_list))
