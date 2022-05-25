@@ -46,8 +46,8 @@ class Config:
             return cls.CONFIG[key]
         return cls.CONFIG
 
-def getTime():
-    return time.strftime("%Y-%m-%d %H:%M:%S")
+def getTime(fmt="%Y-%m-%d %H:%M:%S"):
+    return time.strftime(fmt)
 
 def printerror(message):
     print(f'{colors.ERROR}[ERROR][{getTime()}] {message}{colors.ENDC}')
@@ -60,6 +60,9 @@ def printinfo(message):
 
 def printheader(message):
     print(f'{colors.HEADER}[HEADER] {message}{colors.ENDC}')
+
+def printwarning(message):
+    print(f'{colors.WARNING}[WARNING][{getTime()}] {message}{colors.ENDC}')
 
 def printdebug(message):
     if DEBUG:

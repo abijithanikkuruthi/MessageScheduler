@@ -1,5 +1,4 @@
 import multiprocessing
-import threading
 from MessageHandler import MessageHandler
 from common import Config, printdebug, printheader
 

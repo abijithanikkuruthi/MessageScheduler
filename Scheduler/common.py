@@ -52,9 +52,12 @@ def printinfo(message):
 def printwarning(message):
     print(f'{colors.WARNING}[WARNING][{getTime()}] {message}{colors.ENDC}')
     
+def printheader(message):
+    print(f'{colors.HEADER}[HEADER] {message}{colors.ENDC}')
+
 def printdebug(message):
     if DEBUG:
-        print(f'[DEBUG][{getTime()}] {message}')
+        print(f'{colors.OKBLUE}[DEBUG][{getTime()}] {message}{colors.ENDC}')
 
 def get_bucket_list():
     
