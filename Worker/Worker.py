@@ -3,8 +3,9 @@ import multiprocessing
 from datetime import datetime
 from common import Config, printheader, printsuccess, printdebug, printerror, getTime, excpetion_info
 import time
-from kafka import KafkaConsumer, KafkaProducer, TopicPartition, OffsetAndMetadata
+# from kafka import KafkaConsumer, KafkaProducer, TopicPartition, OffsetAndMetadata
 from json import loads, dumps
+from confluent_kafka import Consumer, Producer, TopicPartition
 
 worker_success_value = multiprocessing.Value('i', 0)
 
@@ -60,66 +61,53 @@ class Task(multiprocessing.Process):
                 return False
 
         def __run():
-            def __close(offset=None, case=''):
-                try:
-                    offset and printdebug(f'Closing consumer for {case} {offset}')
-                    # offset and consumer.commit({ topic_partition: OffsetAndMetadata(offset + 1, None) })
-                    #consumer.commit()
-                except Exception as e:
-                    printerror(e)
-                finally:
-                    consumer.close(autocommit=True)
-                    producer.close()
+            
+            group_id = Config.get('sm_consumer_group_name') + self.task['job']['name'] + '_' + str(self.task_id)
+            
+            consumer = Consumer({
+                'bootstrap.servers':    Config.get('kafka_server'),
+                'group.id':             group_id,
+                'enable.auto.commit':   True,
+                'auto.offset.reset':    'earliest',
+            })
 
-            consumer = KafkaConsumer(
-                            bootstrap_servers  =    Config.get('kafka_server'),
-                            auto_offset_reset  =    'earliest',
-                            enable_auto_commit =    False,
-                            group_id =              Config.get('sm_consumer_group_name'),
-                            consumer_timeout_ms =   5000,
-                            value_deserializer =    lambda x: loads(x.decode('utf-8')),
-                            check_crcs =            False,
-                            max_poll_interval_ms =  1000,)
-
-            producer = KafkaProducer(
-                            bootstrap_servers = Config.get('kafka_server'),
-                            value_serializer =  lambda x: dumps(x).encode('utf-8'))
+            producer = Producer({
+                'bootstrap.servers':    Config.get('kafka_server')})
             
             topic_partition = TopicPartition(self.task['job']['name'], self.task_id)
             consumer.assign([topic_partition])
 
-            printdebug(f'Task.run(): {consumer.assignment()}')
+            while True:
 
-            offset = None
-            for message in consumer:
-                consumer.commit()
-                offset = message.offset
-                topic = __get_topic(getattr(message, 'headers', None))
+                message = consumer.poll(timeout=1)
+                
+                if message is None or message.error():
+                    message and message.error() and printerror(f'Task.run() MessageError: {message.error()}')
+                    break
 
-                message_job_id = __get_header(getattr(message, 'headers', []), Config.get('sm_header_job_id_key'))
-
-                message.value['__sm_worker_time'] = getTime()
-                message.value['__sm_job_id'] = self.task['job_id']
+                topic = __get_topic(message.headers())
+                message_job_id = __get_header(message.headers(), Config.get('sm_header_job_id_key'))
 
                 if topic:
-                    producer.send(
+                    producer.produce(
                         topic   = topic,
-                        value   = getattr(message, 'value', None),
-                        key     = getattr(message, 'key', None),
-                        headers = __set_header(getattr(message, 'headers', []), Config.get('sm_header_job_id_key'), bytes(self.task['job_id'], 'utf-8'))
+                        value   = message.value(),
+                        key     = message.key(),
+                        headers = __set_header(message.headers(), Config.get('sm_header_job_id_key'), bytes(self.task['job_id'], 'utf-8'))
                     )
                     
                     if bytes(self.task['job_id'], 'utf-8') == message_job_id:
-                        __close(None, 'break')
-                        return True
-            __close(None, 'final')
+                        break
+
+            consumer.close()
+            producer.flush()
+
 
         try:
             __run()
         except Exception as e:
             printerror(f'Task Failed in thread ID: {threading.get_native_id()}')
             printerror(e)
-            excpetion_info(e)
             worker_success_value.value = False
 
 class Worker(multiprocessing.Process):
@@ -145,8 +133,6 @@ class Worker(multiprocessing.Process):
         if not worker_success_value.value:
             self.task['status'] = Config.get('worker_status_list')[-1]
             printerror(f'Worker.run(): Worker failed {self.task}')
-        
-        printdebug(f'Worker.run() complete: {self.task}')
         
         self.worker_handler.post_worker(self.task)
 
