@@ -1,6 +1,9 @@
 from constants import DEBUG, REQUEST_ERROR_WAIT_TIME, SCHEDULER_SERVER_URL, REQUEST_COUNT_LIMIT
 import requests
 import time
+import random
+import string
+import uuid
 
 CACHE = {}
 
@@ -46,6 +49,34 @@ class Config:
             return cls.CONFIG[key]
         return cls.CONFIG
 
+class WorkerHandler:
+    def __init__(self) -> None:
+        self.worker_id = str(uuid.uuid4())
+        self.worker_url = SCHEDULER_SERVER_URL + '/worker/' + self.worker_id
+        self.work = None
+
+    def get_worker(self):
+        while True:
+            try:
+                self.work = get_json_from_url(self.worker_url)
+                break
+            except Exception as e:
+                printerror(f'Failed to get worker from {self.worker_url}: {e}')
+                time.sleep(REQUEST_ERROR_WAIT_TIME)
+
+        return self.work
+
+    def post_worker(self, worker):
+        while True:
+            try:
+                self.work = post_json_from_url(self.worker_url, worker)
+                break
+            except Exception as e:
+                printerror(f'Failed to post worker to {self.worker_url}: {worker}{e}')
+                time.sleep(REQUEST_ERROR_WAIT_TIME)
+        
+        return self.work
+
 def getTime(fmt="%Y-%m-%d %H:%M:%S"):
     return time.strftime(fmt)
 
@@ -58,11 +89,11 @@ def printsuccess(message):
 def printinfo(message):
     print(f'[INFO][{getTime()}] {message}')
 
-def printheader(message):
-    print(f'{colors.HEADER}[HEADER] {message}{colors.ENDC}')
-
 def printwarning(message):
     print(f'{colors.WARNING}[WARNING][{getTime()}] {message}{colors.ENDC}')
+    
+def printheader(message):
+    print(f'{colors.HEADER}[HEADER] {message}{colors.ENDC}')
 
 def printdebug(message):
     if DEBUG:
@@ -73,7 +104,6 @@ def send_response_from_url(url, req_type, data):
     while req_count < REQUEST_COUNT_LIMIT:
         req_count = req_count + 1
         try:
-            printdebug(f'[{req_type}] {url}')
             if req_type=='GET':
                 r = requests.get(url)
             elif req_type=='POST':
@@ -90,6 +120,27 @@ def get_response_from_url(url):
 def get_json_from_url(url):
     response = get_response_from_url(url)
     return response.json()
+
+def post_response_from_url(url, data):
+    return send_response_from_url(url, 'POST', data)
+
+def post_json_from_url(url, data):
+    response = post_response_from_url(url, data)
+    return response.json()
+
+def id_generator(size=24, chars=string.ascii_lowercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
+def excpetion_info(e=None):
+    import sys
+
+    exception_type, exception_object, exception_traceback = sys.exc_info()
+    filename = exception_traceback.tb_frame.f_code.co_filename
+    line_number = exception_traceback.tb_lineno
+
+    printerror(f"Exception type: {exception_type}")
+    printerror(f"File name: {filename}")
+    printerror(f"Line number: {line_number}")
 
 if __name__=="__main__":
     print(Config.get())

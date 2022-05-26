@@ -1,20 +1,36 @@
 version: '3'
 
 services:
-  messagehandler:
-    build: ./MessageHandler
-    image: abianik/messagehandler
-    volumes: 
-      - ./MessageHandler:/app
-    environment:
-      - SCHEDULER_SERVER_URL=http://scheduler:8000
-  
   scheduler:
     build: ./Scheduler
     image: abianik/scheduler
+    container_name: scheduler
     volumes: 
       - ./Scheduler:/app
     ports:
       - 8000:8000
     environment:
       - KAFKA_SERVER=192.168.28.46:9092
+      - WORKER_PROCESS_COUNT=4
+  
+  messagehandler:
+    build: ./MessageHandler
+    image: abianik/messagehandler
+    container_name: messagehandler
+    volumes: 
+      - ./MessageHandler:/app
+    environment:
+      - SCHEDULER_SERVER_URL=http://scheduler:8000
+    depends_on:
+      - scheduler
+  
+  worker:
+    build: ./Worker
+    image: abianik/worker
+    container_name: worker
+    volumes: 
+      - ./Worker:/app
+    environment:
+      - SCHEDULER_SERVER_URL=http://scheduler:8000
+    depends_on:
+      - scheduler

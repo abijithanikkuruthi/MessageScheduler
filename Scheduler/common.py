@@ -1,8 +1,7 @@
 import time
-import random
-import string
-from kafka.admin import KafkaAdminClient, NewTopic
-from config import DEBUG, KAFKA_SERVER, SM_BUCKET_TOPIC_FORMAT, SM_BUCKETS_MULTIPLICATION_RATIO, SM_MAXIUMUM_DELAY, SM_MINIUMUM_DELAY, SM_TIME_FORMAT, SM_TOPIC, SM_CONSUMER_GROUP_NAME
+import uuid
+from confluent_kafka.admin import AdminClient, NewTopic
+from constants import *
 import threading
 from contextlib import contextmanager
 
@@ -21,7 +20,7 @@ class TimeoutLock(object):
         result = self._lock.acquire(timeout=timeout)
         yield result
         if not result:
-            printerror(f'[CRITICAL][{self.lock_name}] Lock Timeout. Releasing Lock now. {message}')
+            printerror(f'[CRITICAL][{self.name}] Lock Timeout. Releasing Lock now. {message}')
         self._lock.release()
 
     def release(self):
@@ -53,9 +52,12 @@ def printinfo(message):
 def printwarning(message):
     print(f'{colors.WARNING}[WARNING][{getTime()}] {message}{colors.ENDC}')
     
+def printheader(message):
+    print(f'{colors.HEADER}[HEADER] {message}{colors.ENDC}')
+
 def printdebug(message):
     if DEBUG:
-        print(f'[DEBUG][{getTime()}] {message}')
+        print(f'{colors.OKBLUE}[DEBUG][{getTime()}] {message}{colors.ENDC}')
 
 def get_bucket_list():
     
@@ -102,43 +104,28 @@ def get_bucket_object_list():
     return CACHE['bucket_object_list']
 
 def __get_admin():
-    return KafkaAdminClient(
-        bootstrap_servers=KAFKA_SERVER, 
-    )
+    return AdminClient({'bootstrap.servers': KAFKA_SERVER})
 
 def create_topics(topic_list) -> bool:
     success = True
     admin_client = __get_admin()
-    try:
-        topicobject_list = [NewTopic(name=i['name'], num_partitions=i['num_partitions'], replication_factor=1) for i in topic_list]
-        admin_client.create_topics(new_topics=topicobject_list, validate_only=False)
-        printsuccess(f'Created topics: {topic_list}')
-    except Exception as e:
-        printinfo(f'Unable to create topics: {topic_list} {str(e)}')
-        success = False
-    finally:
-        admin_client.close()
-    
+    topicobject_list = [ NewTopic(topic = i['name'],
+                                    num_partitions = i['num_partitions'],
+                                    replication_factor = 1,
+                                    config = { 'retention.ms': i['retention'] * 1000 }) for i in topic_list ]
+    t = admin_client.create_topics(topicobject_list)
+    for topic, f in t.items():
+        try:
+            f.result()
+        except Exception as e:
+            printwarning(f'{e}')
+            success = False
+
+    success and printsuccess(f'Created topics: {topic_list}')
     return success
 
-def get_config():
-    if CACHE and CACHE.get('config'):
-        return CACHE['config']
-
-    cfg_obj = {
-        'kafka_server' : KAFKA_SERVER,
-        'bucket_list' : get_bucket_list(),
-        'bucket_object_list' : get_bucket_object_list(),
-        'sm_topic' : SM_TOPIC,
-        'group' : SM_CONSUMER_GROUP_NAME,
-        'sm_time_format' : SM_TIME_FORMAT,
-    }
-
-    CACHE['config'] = cfg_obj
-    return cfg_obj
-
-def id_generator(size=24, chars=string.ascii_lowercase + string.digits):
-    return ''.join(random.choice(chars) for _ in range(size))
+def id_generator():
+    return str(uuid.uuid4())
 
 if __name__ == "__main__":
     print(get_bucket_list())
