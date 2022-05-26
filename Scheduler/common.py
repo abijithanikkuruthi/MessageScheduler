@@ -1,6 +1,6 @@
 import time
 import uuid
-from kafka.admin import KafkaAdminClient, NewTopic
+from confluent_kafka.admin import AdminClient, NewTopic
 from constants import *
 import threading
 from contextlib import contextmanager
@@ -104,23 +104,24 @@ def get_bucket_object_list():
     return CACHE['bucket_object_list']
 
 def __get_admin():
-    return KafkaAdminClient(
-        bootstrap_servers=KAFKA_SERVER, 
-    )
+    return AdminClient({'bootstrap.servers': KAFKA_SERVER})
 
 def create_topics(topic_list) -> bool:
     success = True
     admin_client = __get_admin()
-    try:
-        topicobject_list = [NewTopic(name=i['name'], num_partitions=i['num_partitions'], replication_factor=1) for i in topic_list]
-        admin_client.create_topics(new_topics=topicobject_list, validate_only=False)
-        printsuccess(f'Created topics: {topic_list}')
-    except Exception as e:
-        printinfo(f'Unable to create topics: {topic_list} {str(e)}')
-        success = False
-    finally:
-        admin_client.close()
-    
+    topicobject_list = [ NewTopic(topic = i['name'],
+                                    num_partitions = i['num_partitions'],
+                                    replication_factor = 1,
+                                    config = { 'retention.ms': i['retention'] * 1000 }) for i in topic_list ]
+    t = admin_client.create_topics(topicobject_list)
+    for topic, f in t.items():
+        try:
+            f.result()
+        except Exception as e:
+            printwarning(f'{e}')
+            success = False
+
+    success and printsuccess(f'Created topics: {topic_list}')
     return success
 
 def id_generator():

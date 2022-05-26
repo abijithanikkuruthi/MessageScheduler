@@ -30,6 +30,7 @@ class Task(multiprocessing.Process):
                 headers = dict((k, v.decode('utf-8')) for k, v in headers_tuple)
                 if (not headers) or (not headers['topic']):
                     return False
+                
                 if (not headers['time']):
                     return headers['topic']
 

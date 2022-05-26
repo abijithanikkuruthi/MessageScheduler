@@ -1,6 +1,6 @@
 import time
-from common import create_topics, get_bucket_list, printdebug
-from constants import SM_TOPIC, SM_TOPIC_PARTITIONS, SM_PARTITIONS_PER_BUCKET, SERVER_HOST, SERVER_PORT
+from common import create_topics, get_bucket_object_list, printdebug
+from constants import SM_TOPIC, SM_TOPIC_PARTITIONS, SM_PARTITIONS_PER_BUCKET, SERVER_HOST, SERVER_PORT, KAFKA_APPLICATION_RESTART_TIME, SM_BUCKETS_MULTIPLICATION_RATIO
 from flask import Flask, request
 from JobScheduler import JobScheduler
 from WorkerScheduler import WorkerScheduler
@@ -14,11 +14,16 @@ def setup():
             # setup scheduled messages topics for incoming messages
             create_topics([{
                 'name' : SM_TOPIC,
-                'num_partitions' : SM_TOPIC_PARTITIONS
+                'num_partitions' : SM_TOPIC_PARTITIONS,
+                'retention' : 2 * KAFKA_APPLICATION_RESTART_TIME
             }])
 
             # Setup topics for scheduled messages buckets
-            create_topics([ { 'name' : i, 'num_partitions' : SM_PARTITIONS_PER_BUCKET } for i in get_bucket_list() ])
+            create_topics([ { 
+                'name' : i['name'],
+                'num_partitions' : SM_PARTITIONS_PER_BUCKET, 
+                'retention' : (( 2 * KAFKA_APPLICATION_RESTART_TIME) + (2 * SM_BUCKETS_MULTIPLICATION_RATIO * i['lower'])) 
+            } for i in get_bucket_object_list() ])
             return True
         except Exception as e:
             printdebug(f'Setup Error: {e}')

@@ -26,6 +26,7 @@ class ScheduleServer:
             'bucket_list' :                         get_bucket_list(),
             'bucket_object_list' :                  get_bucket_object_list(),
             'kafka_server' :                        KAFKA_SERVER,
+            'kafka_application_restart_time' :      KAFKA_APPLICATION_RESTART_TIME,
             'sm_consumer_group_prefix' :            SM_CONSUMER_GROUP_PREFIX,
             'sm_time_format' :                      SM_TIME_FORMAT,
             'sm_miniumum_delay' :                   SM_MINIUMUM_DELAY,
