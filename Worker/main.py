@@ -1,7 +1,6 @@
 import time
 import multiprocessing
 from common import Config, printdebug, printsuccess, printerror, printheader, WorkerHandler
-from constants import SCHEDULER_SERVER_URL, REQUEST_ERROR_WAIT_TIME, REQUEST_COUNT_LIMIT
 from Worker import Worker
 
 class WorkerProcess(multiprocessing.Process):

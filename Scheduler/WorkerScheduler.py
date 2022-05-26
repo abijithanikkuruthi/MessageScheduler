@@ -33,6 +33,7 @@ class WorkerScheduler(threading.Thread):
     
     def run(self):
         printsuccess(f'WorkerScheduler Started in thread ID: {threading.get_native_id()}')
+        time.sleep(WORKER_SCHEDULER_FREQ)
 
         def __run():
             printdebug(f'WorkerScheduler CronJob Started in thread ID: {threading.get_native_id()}')

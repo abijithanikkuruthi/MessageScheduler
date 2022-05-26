@@ -1,4 +1,4 @@
-from flask import jsonify
+from flask import make_response
 from JobScheduler import JobScheduler, Job
 from WorkerScheduler import WorkerScheduler
 from constants import *
@@ -46,6 +46,7 @@ class ScheduleServer:
             'worker_working_poll_freq' :            WORKER_WORKING_POLL_FREQ,
             'worker_consumer_timeout' :             WORKER_CONSUMER_TIMEOUT,
             'sm_header_job_id_key' :                SM_HEADER_JOB_ID_KEY,
+            'sm_header_worker_timestamp_key' :      SM_HEADER_WORKER_TIMESTAMP_KEY,
             'worker_process_count' :                WORKER_PROCESS_COUNT,
         }
 
@@ -83,4 +84,6 @@ class ScheduleServer:
     
     @classmethod
     def api_job_log(cls, request):
-        return jsonify(Job.get_job_log())
+        response = make_response(Job.get_job_log(), 200)
+        response.mimetype = "text/plain"
+        return response

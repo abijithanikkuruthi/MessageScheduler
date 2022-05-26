@@ -4,14 +4,13 @@ from datetime import datetime
 from common import Config, printheader, printsuccess, printdebug, printerror, getTime, excpetion_info
 from confluent_kafka import Consumer, Producer, TopicPartition
 
-worker_success_value = multiprocessing.Value('i', 0)
-
 class Task(multiprocessing.Process):
     task_id = 0
 
-    def __init__(self, task):
+    def __init__(self, task, worker_success_value):
         multiprocessing.Process.__init__(self)
         self.task = task
+        self.worker_success_value = worker_success_value
         self.task_id = Task.task_id
         Task.task_id += 1
     
@@ -22,12 +21,9 @@ class Task(multiprocessing.Process):
                     return header[1]
             return None
 
-        def __set_header(headers_tuple, key, value):
-            headers_tuple_updated = []
-            for header in headers_tuple:
-                if header[0] != key:
-                    headers_tuple_updated.append(header)
-            return headers_tuple_updated + [(key, value)]
+        def __set_header(headers_tuples, new_tuples):
+            new_keys = [i[0] for i in new_tuples]
+            return new_tuples + [i for i in headers_tuples if i[0] not in new_keys]
 
         def __get_topic(headers_tuple):
             try:
@@ -46,9 +42,9 @@ class Task(multiprocessing.Process):
                 if time_diff < Config.get('sm_miniumum_delay'):
                     return headers['topic']
                 
-                # If the message is scheduled for the future, then we need to bucket it
+                # If the message is scheduled for the future (+ bucket process time), then we need to bucket it in the associated bucket
                 for bucket in reversed(Config.get('bucket_object_list')):
-                    if time_diff > bucket['lower']:
+                    if time_diff > (1 + Config.get('sm_bucket_process_time_fraction')) * bucket['lower']:
                         return bucket['name']
 
                 return headers['topic']
@@ -59,7 +55,7 @@ class Task(multiprocessing.Process):
 
         def __run():
             
-            group_id = Config.get('sm_consumer_group_name') + self.task['job']['name'] + '_' + str(self.task_id)
+            group_id = Config.get('sm_consumer_group_prefix') + self.task['job']['name'] + '_' + str(self.task_id)
             
             consumer = Consumer({
                 'bootstrap.servers':    Config.get('kafka_server'),
@@ -76,21 +72,26 @@ class Task(multiprocessing.Process):
 
             while True:
 
-                message = consumer.poll(timeout=1)
+                message = consumer.poll(timeout=Config.get('worker_consumer_timeout'))
                 
                 if message is None or message.error():
                     message and message.error() and printerror(f'Task.run() MessageError: {message.error()}')
                     break
-
-                topic = __get_topic(message.headers())
-                message_job_id = __get_header(message.headers(), Config.get('sm_header_job_id_key'))
-
+                
+                headers = message.headers()
+                topic = __get_topic(headers)
+                
                 if topic:
+                    message_job_id = __get_header(headers, Config.get('sm_header_job_id_key'))
+
+                    message.set_headers(__set_header(message.headers(), [(Config.get('sm_header_job_id_key'), bytes(self.task['job_id'], 'utf-8')),
+                                         (Config.get('sm_header_worker_timestamp_key'), bytes(getTime(), 'utf-8'))]))
+
                     producer.produce(
                         topic   = topic,
                         value   = message.value(),
                         key     = message.key(),
-                        headers = __set_header(message.headers(), Config.get('sm_header_job_id_key'), bytes(self.task['job_id'], 'utf-8'))
+                        headers = message.headers(),
                     )
                     
                     if bytes(self.task['job_id'], 'utf-8') == message_job_id:
@@ -105,20 +106,20 @@ class Task(multiprocessing.Process):
         except Exception as e:
             printerror(f'Task Failed in thread ID: {threading.get_native_id()}')
             printerror(e)
-            worker_success_value.value = False
+            self.worker_success_value.value = False
 
 class Worker(multiprocessing.Process):
     def __init__(self, work, WorkerHandler):
         multiprocessing.Process.__init__(self)
         self.task = work
         self.worker_handler = WorkerHandler
-        worker_success_value.value = True
+        self.worker_success_value = multiprocessing.Value('i', 1)
 
     def run(self):
         TaskProcessList = []
         # One process per partition
         for _ in range(Config.get('sm_partitions_per_bucket')):
-            t = Task(self.task)
+            t = Task(self.task, self.worker_success_value)
             t.start()
             TaskProcessList.append(t)
         
@@ -127,7 +128,7 @@ class Worker(multiprocessing.Process):
         
         self.task['status'] = Config.get('worker_status_list.done')
         
-        if not worker_success_value.value:
+        if not self.worker_success_value.value:
             self.task['status'] = Config.get('worker_status_list.error')
             printerror(f'Worker.run(): Worker failed {self.task}')
         

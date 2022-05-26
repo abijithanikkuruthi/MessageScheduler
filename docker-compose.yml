@@ -17,4 +17,4 @@ services:
     ports:
       - 8000:8000
     environment:
-      - KAFKA_SERVER=192.168.1.4:9092
+      - KAFKA_SERVER=192.168.28.46:9092

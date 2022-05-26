@@ -39,15 +39,16 @@ class Job:
 
             with Job.JOB_LOG_LOCK.acquire_timeout(JOB_QUEUE_THREAD_LOCK_TIMEOUT, 'Job.done()') as acquired:
                 job_log_str = ', '.join([str(v) for k, v in self.__dict__.items()])
-                try:
-                    with open(JOB_LOG_FILE, 'a') as f:
-                        f.write(f'{job_log_str}\n')
-                except Exception as e:
-                    printinfo(f'Job.done(): Error writing to Job Log File: {e}')
+                
+                if not os.path.exists(JOB_LOG_FILE):
                     with open(JOB_LOG_FILE, 'a+') as f:
                         job_header_str = ', '.join(self.__dict__.keys())
                         f.write(f'{job_header_str}\n')
                         f.write(f'{job_log_str}\n')
+                else:
+                    with open(JOB_LOG_FILE, 'a') as f:
+                        f.write(f'{job_log_str}\n')
+                    
 
             printdebug(f'Job Done: {self.__dict__}')
 
