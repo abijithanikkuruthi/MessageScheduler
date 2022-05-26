@@ -11,7 +11,7 @@ services:
       - 8000:8000
     environment:
       - KAFKA_SERVER=192.168.28.46:9092
-      - WORKER_PROCESS_COUNT=4
+      - WORKER_PROCESS_COUNT=6
   
   messagehandler:
     build: ./MessageHandler
