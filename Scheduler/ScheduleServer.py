@@ -48,6 +48,7 @@ class ScheduleServer:
             'sm_header_job_id_key' :                SM_HEADER_JOB_ID_KEY,
             'sm_header_worker_timestamp_key' :      SM_HEADER_WORKER_TIMESTAMP_KEY,
             'worker_process_count' :                WORKER_PROCESS_COUNT,
+            'sm_header_message_hopcount_key' :      SM_HEADER_MESSAGE_HOPCOUNT_KEY,
         }
 
     @classmethod

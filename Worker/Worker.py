@@ -35,8 +35,8 @@ class Task(multiprocessing.Process):
 
                 time_diff = (datetime.strptime(headers['time'], Config.get('sm_time_format')) - datetime.now()).total_seconds()
                 
-                if time_diff < -2 * Config.get('sm_miniumum_delay'):
-                    printerror(f'Task.run(): WORKER DELAY: {headers}')
+                if time_diff < -1 * Config.get('sm_miniumum_delay'):
+                    printerror(f'Task.run(): WORKER DELAY of {time_diff}: {headers}')
 
                 # If the message is scheduled for a time too small to bucket, we send it to the provided topic
                 if time_diff < Config.get('sm_miniumum_delay'):
@@ -80,12 +80,15 @@ class Task(multiprocessing.Process):
                 
                 headers = message.headers()
                 topic = __get_topic(headers)
-                
+                hop_count = __get_header(headers, Config.get('sm_header_message_hopcount_key'))
+                hop_count = (int(hop_count) + 1) if hop_count else 0
+
                 if topic:
                     message_job_id = __get_header(headers, Config.get('sm_header_job_id_key'))
 
                     message.set_headers(__set_header(message.headers(), [(Config.get('sm_header_job_id_key'), bytes(self.task['job_id'], 'utf-8')),
-                                         (Config.get('sm_header_worker_timestamp_key'), bytes(getTime(), 'utf-8'))]))
+                                         (Config.get('sm_header_worker_timestamp_key'), bytes(getTime(), 'utf-8')),
+                                         (Config.get('sm_header_message_hopcount_key'), bytes(str(hop_count), 'utf-8'))]))
 
                     producer.produce(
                         topic   = topic,
