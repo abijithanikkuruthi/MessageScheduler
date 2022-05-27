@@ -4,17 +4,17 @@ services:
     container_name: docker-monitor
     image: abianik/docker-monitor
     build: ./docker-monitor
-    network_mode: host
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./docker-monitor/logs:/logs
+      - ./docker-monitor/logs:/app/logs
     environment:
-      - JOB_LOG_API_URL=http://localhost:8000/api/job_log
+      - SCHEDULER_SERVER_URL=http://scheduler:8000
 
   kafka-jmx-exporter:
     image: bitnami/jmx-exporter:latest
     container_name: kafka-jmx-exporter
-    network_mode: host
+    ports:
+      - 5556:5556
     volumes:
      - ./kafka-jmx-exporter.yml:/opt/bitnami/jmx-exporter/config.yml
     command: 5556 config.yml
@@ -23,7 +23,8 @@ services:
   prometheus:
     image: "prom/prometheus:latest"
     container_name: prometheus
-    network_mode: host
+    ports:
+      - 9090:9090
     volumes:
      - ./prometheus.yml:/etc/prometheus/prometheus.yml
      - ./prometheus:/prometheus
@@ -33,11 +34,12 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
-    network_mode: host
+    ports:
+      - 3000:3000
     environment:
       GF_SECURITY_ADMIN_PASSWORD : kafka
-      GF_RENDERING_SERVER_URL: http://localhost:8081/render
-      GF_RENDERING_CALLBACK_URL: http://localhost:3000/
+      GF_RENDERING_SERVER_URL: http://renderer:8081/render
+      GF_RENDERING_CALLBACK_URL: http://grafana:3000/
     volumes:
      - ./grafana/provisioning:/etc/grafana/provisioning
      - ./grafana/dashboards:/var/lib/grafana/dashboards
@@ -47,6 +49,12 @@ services:
   renderer:
     image: grafana/grafana-image-renderer:latest
     container_name: renderer
-    network_mode: host
+    ports:
+      - 8081:8081
     depends_on:
      - grafana
+
+networks:
+  default: 
+    external: 
+      name: kafka-network

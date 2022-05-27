@@ -8,7 +8,7 @@ services:
     ports:
       - 8000:8000
     environment:
-      - KAFKA_SERVER=192.168.1.4:9092
+      - KAFKA_SERVER=kafka:9092
       - WORKER_PROCESS_COUNT=1
   
   messagehandler:
@@ -28,3 +28,8 @@ services:
     depends_on:
       - scheduler
     scale: 4
+
+networks: 
+  default: 
+    external: 
+      name: kafka-network

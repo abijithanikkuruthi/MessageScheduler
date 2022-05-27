@@ -1,6 +1,8 @@
-FROM docker:latest
+FROM python:3
 
-RUN apk add --no-cache tzdata
+COPY . /app
+WORKDIR /app
 ENV TZ=Europe/Amsterdam
-COPY run.sh /run.sh
-CMD [ "sh", "/run.sh" ]
+ENV PYTHONUNBUFFERED=TRUE
+RUN sh setup.sh
+CMD [ "sh", "run.sh" ]
