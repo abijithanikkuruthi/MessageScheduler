@@ -1,3 +1,7 @@
+# https://docs.confluent.io/platform/current/kafka/monitoring.html
+# 
+# MONITORING INFORMATION FOR EACH PARAMETER
+#
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements. See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -17,7 +21,7 @@
 # Kafka Broker JMX Metrics : 
 # Compatible with version Apache Kafka v2.x.x / Confluent Plateform 5.x.x
 #---------------------------------------------------------------------------------------------------------
-hostPort: kafka:9991
+hostPort: localhost:9991
 lowercaseOutputName: true
 lowercaseOutputLabelNames: true
 

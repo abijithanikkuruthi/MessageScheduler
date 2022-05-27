@@ -1,2 +1,4 @@
 __pycache__
 jobs_done_log.csv
+monitoring/prometheus/
+monitoring/docker-monitor/logs
