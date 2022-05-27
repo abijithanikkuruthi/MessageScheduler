@@ -36,27 +36,27 @@ services:
     depends_on:
       - kafka
   
-  kafka-exporter:
-    image: "sscaling/jmx-prometheus-exporter"
-    container_name: kafka-exporter
+  kafka-jmx-exporter:
+    image: bitnami/jmx-exporter:latest
+    container_name: kafka-jmx-exporter
     ports:
-     - "5556:5556"
-    environment:
-     CONFIG_YML : "/etc/jmx_exporter/config.yml"
+     - 5556:5556
     volumes:
-     - ./kafka/config.yml:/etc/jmx_exporter/config.yml
+     - ./kafka-jmx-exporter.yml:/opt/bitnami/jmx-exporter/config.yml
+    command: 5556 config.yml
     depends_on:
      - kafka
-  
+
   prometheus:
     image: "prom/prometheus:latest"
     container_name: prometheus
     ports:
      - 9090:9090
     volumes:
-     - ./kafka/prometheus.yml:/etc/prometheus/prometheus.yml
+     - ./prometheus.yml:/etc/prometheus/prometheus.yml
+     - ./prometheus:/prometheus
     depends_on:
-      - kafka-exporter
+      - kafka-jmx-exporter
   
   grafana:
     image: "grafana/grafana:latest"
@@ -64,10 +64,19 @@ services:
     ports:
      - 3000:3000
     environment:
-      GF_PATHS_DATA : /var/lib/grafana
       GF_SECURITY_ADMIN_PASSWORD : kafka
+      GF_RENDERING_SERVER_URL: http://renderer:8081/render
+      GF_RENDERING_CALLBACK_URL: http://grafana:3000/
     volumes:
      - ./grafana/provisioning:/etc/grafana/provisioning
      - ./grafana/dashboards:/var/lib/grafana/dashboards
     depends_on:
      - prometheus
+  
+  renderer:
+    image: grafana/grafana-image-renderer:latest
+    container_name: renderer
+    ports:
+     - 8081:8081
+    depends_on:
+     - grafana

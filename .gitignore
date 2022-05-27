@@ -1,2 +1,3 @@
 __pycache__
 jobs_done_log.csv
+kafka/prometheus/
