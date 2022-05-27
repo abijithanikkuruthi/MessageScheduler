@@ -1,5 +1,13 @@
 version: '3'
 services:
+  docker-monitor:
+    container_name: docker-monitor
+    image: abianik/docker-monitor
+    build: ./docker-monitor
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./docker-monitor/logs:/logs
+
   kafka-jmx-exporter:
     image: bitnami/jmx-exporter:latest
     container_name: kafka-jmx-exporter
