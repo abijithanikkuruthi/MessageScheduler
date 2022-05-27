@@ -7,6 +7,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./docker-monitor/logs:/logs
+    environment:
+      - JOB_LOG_API_URL=http://192.168.28.46:8000/api/job_log
 
   kafka-jmx-exporter:
     image: bitnami/jmx-exporter:latest
