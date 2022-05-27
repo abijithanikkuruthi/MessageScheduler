@@ -29,10 +29,10 @@ class Config:
         while True:
             try:
                 cls.CONFIG = get_json_from_url(cls.CONFIG_URL)
-                printsuccess(f'Config updated from {cls.CONFIG_URL}')
+                printdebug(f'Config updated from {cls.CONFIG_URL}')
                 cls.CONFIG['last_update'] = getTime()
                 cls.CONFIG['bucket_object_list'] = sorted(cls.CONFIG['bucket_object_list'], key=lambda k: k['lower'])
-                printinfo(f'Config: {cls.CONFIG}')
+                printdebug(f'Config: {cls.CONFIG}')
                 break
             except Exception as e:
                 printerror(f'Failed to get config from {Config.CONFIG_URL}: {e}')

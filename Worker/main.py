@@ -38,3 +38,5 @@ class WorkerProcess(multiprocessing.Process):
 if __name__ == '__main__':
     for _ in range(Config.get('worker_process_count')):
         WorkerProcess().start()
+    
+    printheader("\nWorker Service started with " + str(Config.get('worker_process_count')) + " processes.")

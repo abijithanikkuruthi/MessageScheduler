@@ -12,10 +12,7 @@ class MessageHandlerProcess(multiprocessing.Process):
 
 if __name__ == "__main__":
 
-    pid_list = []
     for _ in range(Config.get('sm_mh_process_count')):
-        p = MessageHandlerProcess()
-        p.start()
-        pid_list.append(p.pid)
+        MessageHandlerProcess().start()
     
-    printheader("\nMessageScheduler Service started in " + str(len(pid_list)) + " processes.\nPIDs: " + str(pid_list))
+    printheader("\nMessageHandler Service started with " + str(Config.get('sm_mh_process_count')) + " processes.")
