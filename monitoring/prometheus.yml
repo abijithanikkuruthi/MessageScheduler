@@ -19,4 +19,4 @@ scrape_configs:
     # scheme defaults to 'http'.
 
     static_configs:
-    - targets: ['kafka-jmx-exporter:5556']
+    - targets: ['localhost:5556']

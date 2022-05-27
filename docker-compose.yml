@@ -8,8 +8,8 @@ services:
     ports:
       - 8000:8000
     environment:
-      - KAFKA_SERVER=192.168.1.4:9092
-      - WORKER_PROCESS_COUNT=5
+      - KAFKA_SERVER=192.168.28.46:9092
+      - WORKER_PROCESS_COUNT=1
   
   messagehandler:
     build: ./MessageHandler
@@ -23,8 +23,8 @@ services:
   worker:
     build: ./Worker
     image: abianik/worker
-    container_name: worker
     environment:
       - SCHEDULER_SERVER_URL=http://scheduler:8000
     depends_on:
       - scheduler
+    scale: 4
