@@ -3,7 +3,6 @@ services:
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     container_name: zookeeper
-    network_mode: host
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -12,11 +11,13 @@ services:
   kafka:
     image: confluentinc/cp-kafka:latest
     container_name: kafka
-    network_mode: host
     depends_on:
       - zookeeper
+    ports:
+      - 9092:9092
+      - 9991:9991
     environment:
-      KAFKA_ZOOKEEPER_CONNECT: localhost:2181
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
@@ -28,12 +29,18 @@ services:
   kafka-ui:
     image: provectuslabs/kafka-ui
     container_name: kafka-ui
-    network_mode: host
+    ports:
+      - 9080:9080
     environment:
       - KAFKA_CLUSTERS_0_NAME=kafka
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=localhost:9092
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
       - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
       - SERVER_PORT=9080
     depends_on:
       - kafka
     restart: unless-stopped
+
+networks:
+  default: 
+    external: 
+      name: kafka-network
