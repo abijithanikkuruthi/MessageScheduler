@@ -117,7 +117,7 @@ class Worker(multiprocessing.Process):
         multiprocessing.Process.__init__(self)
         self.task = work
         self.worker_handler = WorkerHandler
-        self.worker_success_value = multiprocessing.Value('i', 1)
+        self.worker_success_value = multiprocessing.Value('b', True)
 
     def run(self):
         TaskProcessList = []

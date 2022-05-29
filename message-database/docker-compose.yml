@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  messenger:
+    build: ./messenger
+    image: abianik/messenger
+    container_name: messenger
+    environment:
+      - KAFKA_SERVER=kafka:9092
+      - EXPERIMENT_DURATION_HOURS=0.01
+      - EXPERIMENT_MESSAGE_COUNT=1000
+      - EXPERIMENT_MESSAGE_SIZE=100
+      - MESSENGER_SCHEDULER_FREQ=5
+
+networks:
+  default:
+    external:
+      name: kafka-network
