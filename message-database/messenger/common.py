@@ -1,10 +1,11 @@
-from constants import DEBUG, REQUEST_COUNT_LIMIT, REQUEST_ERROR_WAIT_TIME
+from constants import *
 import requests
 import time
 import uuid
 import random
 import string
-    
+from confluent_kafka.admin import AdminClient, NewTopic
+
 CACHE = {}
 
 class colors:
@@ -85,6 +86,27 @@ def excpetion_info(e=None):
     printerror(f"Exception type: {exception_type}")
     printerror(f"File name: {filename}")
     printerror(f"Line number: {line_number}")
+
+def __get_admin():
+    return AdminClient({'bootstrap.servers': KAFKA_SERVER})
+
+def create_topics(topic_list) -> bool:
+    success = True
+    admin_client = __get_admin()
+    topicobject_list = [ NewTopic(topic = i['name'],
+                                    num_partitions = i['num_partitions'],
+                                    replication_factor = 1,
+                                    config = { 'retention.ms': int(i['retention'] * 1000) }) for i in topic_list ]
+    t = admin_client.create_topics(topicobject_list)
+    for topic, f in t.items():
+        try:
+            f.result()
+        except Exception as e:
+            printwarning(f'{e}')
+            success = False
+
+    success and printsuccess(f'Created topics: {topic_list}')
+    return success
 
 def save_url_to_file(url, filename):
     response = get_response_from_url(url)

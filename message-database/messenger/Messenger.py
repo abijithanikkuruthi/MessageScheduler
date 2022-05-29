@@ -5,6 +5,7 @@ import time
 import datetime
 from random import randrange
 from confluent_kafka import Producer
+from pymongo import MongoClient
 
 class ProgressInfo:
     def __init__(self, total) -> None:
@@ -54,7 +55,7 @@ class Messenger(multiprocessing.Process):
         # Data connections init
         producer = Producer({ 'bootstrap.servers':KAFKA_SERVER, 'client.id' : self.job_id }) if KAFKA_ENABLED else None
         database_scheduler = False #DATABASE_ENABLED and DATABASE_SERVER
-        message_database = False #mongo.MongoClient(DATABASE_SERVER)['messages']
+        message_database = MongoClient(MESSAGE_DATABASE_URL)[KAFKA_MESSAGE_TOPIC][KAFKA_MESSAGE_TOPIC] if MESSAGE_DATABASE_ENABLED else None
 
         def __get_message_to_send_count():
             try:
@@ -102,7 +103,7 @@ class Messenger(multiprocessing.Process):
                 message = __build_message()
 
                 # KAFKA
-                if producer is not None:
+                if KAFKA_ENABLED:
                     message_sent = False
                     tries = 0
                     while not message_sent:
@@ -135,12 +136,12 @@ class Messenger(multiprocessing.Process):
                             time.sleep(1)
                 
                 # Message Database
-                if message_database:
+                if MESSAGE_DATABASE_ENABLED:
                     message_sent = False
                     tries = 0
                     while not message_sent:
                         try:
-                            # message_database.insert_one(message)
+                            message_database.insert_one(message['header'])
                             message_sent = True
                             break
                         except Exception as e:
@@ -154,6 +155,7 @@ class Messenger(multiprocessing.Process):
             # self.message_database.insert_one(message).commit()
 
         printsuccess(f'Messenger started')
+        printinfo(f'Preparing to send {EXPERIMENT_MESSAGE_COUNT} messages in {EXPERIMENT_DURATION_HOURS} hours ({int(EXPERIMENT_DURATION_HOURS*60)} minutes)')
         while self.messages_sent < EXPERIMENT_MESSAGE_COUNT:
 
             # calculate how many messages to send in the next {MESSENGER_SCHEDULER_FREQ} seconds
@@ -172,7 +174,7 @@ class Messenger(multiprocessing.Process):
             time.sleep(MESSENGER_SCHEDULER_FREQ)
 
         self.finish_time = time.time()
-        printsuccess(f'Messenger finished sending {self.messages_sent} messages in {(self.finish_time - self.start_time)/(60*60)} hours.')
+        printsuccess(f'Messenger finished sending {self.messages_sent} messages in {int((self.finish_time - self.start_time)/(60))} minutes.')
 
 if __name__ == '__main__':
     m = Messenger()
