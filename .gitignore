@@ -3,3 +3,6 @@ jobs_done_log.csv
 monitoring/prometheus/
 monitoring/docker-monitor/logs
 test.py
+
+database-scheduler/mysql/
+message-database/mongo/

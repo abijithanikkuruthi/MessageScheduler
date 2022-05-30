@@ -45,6 +45,7 @@ def save_stats(stats):
     log_str = ', '.join([str(v) for k, v in stats.items()])
                 
     if not os.path.exists(DOCKER_MONITOR_LOG_FILE_PATH):
+        os.makedirs(WORKING_FOLDER, exist_ok=True)
         with open(DOCKER_MONITOR_LOG_FILE_PATH, 'a+') as f:
             header_str = ', '.join(stats.keys())
             f.write(f'{header_str}\n')

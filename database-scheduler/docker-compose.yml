@@ -11,8 +11,6 @@ services:
       MYSQL_PASSWORD: kafka
     ports:
       - 3306:3306
-    volumes:
-      - ./mysql:/var/lib/mysql
 
   adminer:
     image: adminer
