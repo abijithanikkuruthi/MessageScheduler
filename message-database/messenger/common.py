@@ -5,8 +5,12 @@ import uuid
 import random
 import string
 from confluent_kafka.admin import AdminClient, NewTopic
+import mysql.connector
+from mysql.connector import errorcode
+from datetime import datetime, timedelta, date
 
 CACHE = {}
+cnx = None
 
 class colors:
     HEADER = '\033[95m'
@@ -107,6 +111,77 @@ def create_topics(topic_list) -> bool:
 
     success and printsuccess(f'Created topics: {topic_list}')
     return success
+
+def __get_cnx():
+    global cnx
+    try:
+        if not cnx:
+            cnx = mysql.connector.connect(user=DATABASE_SCHEDULER_USER, 
+                                password=DATABASE_SCHEDULER_PASSWORD,
+                              host=DATABASE_SCHEDULER_HOST)
+        return cnx
+    except Exception as e:
+        printwarning(e)
+        return False
+
+def create_database(database_name):
+    global cnx
+    try:
+        cnx = __get_cnx()
+        cursor = cnx.cursor()
+        cursor.execute("CREATE DATABASE {} DEFAULT CHARACTER SET 'utf8'".format(database_name))
+        cnx.commit()
+        cursor.close()
+        cnx.close()
+        cnx = mysql.connector.connect(user=DATABASE_SCHEDULER_USER, 
+                                password=DATABASE_SCHEDULER_PASSWORD,
+                              host=DATABASE_SCHEDULER_HOST,
+                              database=database_name)
+        printsuccess(f'Created database: {database_name}')
+    except Exception as e:
+        cnx.close()
+        cnx = mysql.connector.connect(user=DATABASE_SCHEDULER_USER, 
+                                password=DATABASE_SCHEDULER_PASSWORD,
+                              host=DATABASE_SCHEDULER_HOST,
+                              database=database_name)
+        printwarning("Failed creating database: {}".format(e))
+
+def create_table(table_name, table_schema):
+    try:
+        cnx = __get_cnx()
+        cursor = cnx.cursor()
+        cursor.execute(f"CREATE TABLE {table_name} ({table_schema})")
+        cnx.commit()
+        cursor.close()
+        printsuccess(f'Created table: {table_name}')
+    except Exception as e:
+        printwarning("Failed creating table: {}".format(e))
+
+def insert_data(table_name, data):
+    try:
+        cnx = __get_cnx()
+        cursor = cnx.cursor()
+        cursor.execute(f"INSERT INTO {table_name} VALUES ({data})")
+        cnx.commit()
+        cursor.close()
+    except Exception as e:
+        printwarning("Failed inserting data: {}".format(e))
+
+def insert_message(table_name, message):
+    insert_data(table_name, get_insert_message(message))
+
+def get_insert_message(message):
+    insert_message = ""
+    insert_key = ""
+    for k, v in MESSAGES_TABLE_SCHEMA.items():
+        try:
+            insert_message += f"'{message[k]}', "
+            insert_key += f"{k}, "
+        except Exception as e:
+            continue
+    insert_message = insert_message[:-2]
+    insert_key = insert_key[:-2]
+    return insert_key, insert_message
 
 def save_url_to_file(url, filename):
     response = get_response_from_url(url)

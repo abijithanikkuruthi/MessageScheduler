@@ -12,6 +12,7 @@ services:
       - EXPERIMENT_MESSAGE_SIZE=100
       - MESSENGER_SCHEDULER_FREQ=5
       - MESSAGE_DATABASE_URL=mongodb://admin:kafka@mongo:27017/
+      - DATABASE_SCHEDULER_HOST=mysql
     depends_on:
       - mongo
 

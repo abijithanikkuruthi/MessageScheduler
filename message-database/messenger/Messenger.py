@@ -1,11 +1,12 @@
 import multiprocessing
 from constants import *
-from common import getTime, id_generator, printinfo, printsuccess, random_data, printerror
+from common import getTime, id_generator, printinfo, printsuccess, random_data, printerror, get_insert_message
 import time
 import datetime
 from random import randrange
 from confluent_kafka import Producer
 from pymongo import MongoClient
+import mysql.connector
 
 class ProgressInfo:
     def __init__(self, total) -> None:
@@ -45,16 +46,13 @@ class Messenger(multiprocessing.Process):
         self.end_time = time.time() + (EXPERIMENT_DURATION_HOURS * 3600)
         self.progress = ProgressInfo(EXPERIMENT_MESSAGE_COUNT)
     
-        #self.producer = Producer({ 'bootstrap.servers':KAFKA_SERVER, 'client.id' : self.job_id }) if KAFKA_ENABLED else None
-        # self.producer = KafkaProducer(bootstrap_servers=[KAFKA_SERVER],
-        #                 value_serializer=lambda x:  json.dumps(x).encode('utf-8'))
-        # self.database_scheduler = False #DATABASE_ENABLED and DATABASE_SERVER
-        # self.message_database = False #mongo.MongoClient(DATABASE_SERVER)['messages']
-
     def run(self):
         # Data connections init
         producer = Producer({ 'bootstrap.servers':KAFKA_SERVER, 'client.id' : self.job_id }) if KAFKA_ENABLED else None
-        database_scheduler = False #DATABASE_ENABLED and DATABASE_SERVER
+        database_scheduler_cnx = mysql.connector.connect(user=DATABASE_SCHEDULER_USER, 
+                                password=DATABASE_SCHEDULER_PASSWORD,
+                              host=DATABASE_SCHEDULER_HOST,
+                              database=DATABASE_SCHEDULER_DATABASE) if DATABASE_SCHEDULER_ENABLED else None
         message_database = MongoClient(MESSAGE_DATABASE_URL)[KAFKA_MESSAGE_TOPIC][KAFKA_MESSAGE_TOPIC] if MESSAGE_DATABASE_ENABLED else None
 
         def __get_message_to_send_count():
@@ -109,7 +107,6 @@ class Messenger(multiprocessing.Process):
                     while not message_sent:
                         try:
                             producer.produce(topic=SM_TOPIC, value=bytes(message['value'], 'utf-8'), headers=__kafka_header(message['header']))
-                            # self.producer.send(topic=SM_TOPIC, value=message['value'], headers=__kafka_header(message['header']))
                             message_sent = True
                             break
                         except Exception as e:
@@ -120,16 +117,17 @@ class Messenger(multiprocessing.Process):
                             time.sleep(1)
                 
                 # Database Scheduler
-                if database_scheduler:
+                if DATABASE_SCHEDULER_ENABLED:
                     message_sent = False
                     tries = 0
                     while not message_sent:
                         try:
-                            # message_database.insert_one(message)
+                            insert_keys, insert_string = get_insert_message(message['header'])
+                            database_scheduler_cnx.cursor().execute(f"INSERT INTO {DATABASE_SCHEDULER_SM_TABLE} ({insert_keys}) VALUES ({insert_string})")
                             message_sent = True
                             break
                         except Exception as e:
-                            printerror(f'Unable to send message to DB: {e}')
+                            printerror(f'Unable to send message to mysql DB: {e}')
                             tries += 1
                             if tries > REQUEST_COUNT_LIMIT:
                                 break
@@ -145,15 +143,17 @@ class Messenger(multiprocessing.Process):
                             message_sent = True
                             break
                         except Exception as e:
-                            printerror(f'Unable to send message to DB: {e}')
+                            printerror(f'Unable to send message to mongo DB: {e}')
                             tries += 1
                             if tries > REQUEST_COUNT_LIMIT:
                                 break
                             time.sleep(1)
             
-            producer.flush(KAFKA_MESSAGE_TIMEOUT)
-            # self.message_database.insert_one(message).commit()
-
+            if KAFKA_ENABLED:
+                producer.flush(KAFKA_MESSAGE_TIMEOUT)
+            if DATABASE_SCHEDULER_ENABLED:
+                database_scheduler_cnx.commit()
+        
         printsuccess(f'Messenger started')
         printinfo(f'Preparing to send {EXPERIMENT_MESSAGE_COUNT} messages in {EXPERIMENT_DURATION_HOURS} hours ({int(EXPERIMENT_DURATION_HOURS*60)} minutes)')
         while self.messages_sent < EXPERIMENT_MESSAGE_COUNT:
