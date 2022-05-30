@@ -10,6 +10,7 @@ class CollectorProcess(multiprocessing.Process):
         multiprocessing.Process.__init__(self)
     
     def run(self):
+
         while True:
             try:
                 message_database = MongoClient(MESSAGE_DATABASE_URL)[KAFKA_MESSAGE_TOPIC][MESSAGE_DATABASE_TABLE] if MESSAGE_DATABASE_ENABLED else None
@@ -33,7 +34,7 @@ class CollectorProcess(multiprocessing.Process):
 
             except Exception as e:
                 try:
-                    printerror(f'MessageHandler.run(): Trying to close consumer')
+                    printerror(f'Collector.run(): Trying to close consumer')
                     consumer.close()
                 except Exception as e:
                     printerror(f'Unable to close consumer: {e}')
@@ -48,4 +49,4 @@ class Collector(multiprocessing.Process):
         if MESSAGE_DATABASE_ENABLED:
             for _ in range(COLLECTOR_PROCESS_COUNT):
                 CollectorProcess().start()
-            
+            printsuccess(f'Collector started in {COLLECTOR_PROCESS_COUNT} processes')
