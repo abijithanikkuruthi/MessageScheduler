@@ -1,6 +1,15 @@
 version: '3'
 
 services:
+  database-scheduler:
+    image: abianik/database-scheduler
+    build: ./database-scheduler
+    container_name: database-scheduler
+    environment:
+     - MESSAGE_SIZE_BYTES=100
+     - DATABASE_SCHEDULER_HOST=mysql
+    restart: unless-stopped
+
   mysql:
     image: mysql
     container_name: mysql

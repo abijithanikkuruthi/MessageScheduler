@@ -46,22 +46,12 @@ DATABASE_SCHEDULER_DATABASE = os.getenv('DATABASE_SCHEDULER_DATABASE', 'MESSAGES
 DATABASE_SCHEDULER_SM_TABLE = os.getenv('DATABASE_SCHEDULER_SM_TABLE', 'MESSAGES')
 
 
-# Build table schema
-# MESSAGES_TABLE_SCHEMA = {
-#     'topic':                            'VARCHAR(50)',
-#     'time' :                            'DATETIME',
-#     EXPERIMENT_ID_KEY :                 'VARCHAR(50)',
-#     MESSAGE_ID_KEY :                    'VARCHAR(50)',
-#     SM_HEADER_JOB_ID_KEY :              'VARCHAR(50)',
-#     SM_HEADER_MH_TIMESTAMP_KEY :        'VARCHAR(50)',
-#     SM_HEADER_WORKER_TIMESTAMP_KEY :    'VARCHAR(50)',
-#     SM_HEADER_MESSAGE_HOPCOUNT_KEY :    'VARCHAR(50)',
-#     EXPERIMENT_MESSAGE_CREATION_KEY :   'VARCHAR(50)',
-# }
 MESSAGES_TABLE_SCHEMA = {
+    MESSAGE_ID_KEY :                    'VARCHAR(50)',
     'topic':                            'VARCHAR(50)',
     'time' :                            'DATETIME',
+    'value':                          f'VARCHAR({MESSAGE_SIZE_BYTES})',
+    'delivered':                        'BOOLEAN',
     EXPERIMENT_ID_KEY :                 'VARCHAR(50)',
-    MESSAGE_ID_KEY :                    'VARCHAR(50)',
     EXPERIMENT_MESSAGE_CREATION_KEY :   'VARCHAR(50)',
 }

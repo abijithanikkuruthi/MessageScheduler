@@ -1,10 +1,8 @@
 from constants import *
-import requests
 import time
 import uuid
 import random
 import string
-from confluent_kafka.admin import AdminClient, NewTopic
 import mysql.connector
 from mysql.connector import errorcode
 from datetime import datetime, timedelta, date
@@ -45,35 +43,6 @@ def printdebug(message):
     if DEBUG:
         print(f'{colors.OKBLUE}[DEBUG][{getTime()}] {message}{colors.ENDC}')
 
-def send_response_from_url(url, req_type, data):
-    req_count = 0
-    while req_count < REQUEST_COUNT_LIMIT:
-        req_count = req_count + 1
-        try:
-            if req_type=='GET':
-                r = requests.get(url)
-            elif req_type=='POST':
-                r = requests.post(url, json=data)
-            return r
-        except:
-            printerror(f'Unable to connect to {url}. Retrying...')
-            time.sleep(REQUEST_ERROR_WAIT_TIME)
-    return False
-
-def get_response_from_url(url):
-    return send_response_from_url(url, 'GET', {})
-
-def get_json_from_url(url):
-    response = get_response_from_url(url)
-    return response.json()
-
-def post_response_from_url(url, data):
-    return send_response_from_url(url, 'POST', data)
-
-def post_json_from_url(url, data):
-    response = post_response_from_url(url, data)
-    return response.json()
-
 def id_generator():
     return str(uuid.uuid4())
 
@@ -90,27 +59,6 @@ def excpetion_info(e=None):
     printerror(f"Exception type: {exception_type}")
     printerror(f"File name: {filename}")
     printerror(f"Line number: {line_number}")
-
-def __get_admin():
-    return AdminClient({'bootstrap.servers': KAFKA_SERVER})
-
-def create_topics(topic_list) -> bool:
-    success = True
-    admin_client = __get_admin()
-    topicobject_list = [ NewTopic(topic = i['name'],
-                                    num_partitions = i['num_partitions'],
-                                    replication_factor = 1,
-                                    config = { 'retention.ms': int(i['retention'] * 1000) }) for i in topic_list ]
-    t = admin_client.create_topics(topicobject_list)
-    for topic, f in t.items():
-        try:
-            f.result()
-        except Exception as e:
-            printwarning(f'{e}')
-            success = False
-
-    success and printsuccess(f'Created topics: {topic_list}')
-    return success
 
 def __get_cnx():
     global cnx
@@ -175,19 +123,13 @@ def get_insert_message(message):
     insert_key = ""
     for k, v in MESSAGES_TABLE_SCHEMA.items():
         try:
-            insert_message += f"'{message['header'][k]}', "
+            insert_message += f"'{message[k]}', "
             insert_key += f"{k}, "
         except Exception as e:
             continue
-    
-    insert_message += f"'{message['value']}'"
-    insert_key += "value"
+    insert_message = insert_message[:-2]
+    insert_key = insert_key[:-2]
     return insert_key, insert_message
-
-def save_url_to_file(url, filename):
-    response = get_response_from_url(url)
-    with open(filename, 'wb') as f:
-        f.write(response.content)
 
 if __name__=="__main__":
     pass
