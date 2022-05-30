@@ -114,7 +114,7 @@ class Messenger(multiprocessing.Process):
                     tries = 0
                     while not message_sent:
                         try:
-                            insert_keys, insert_string = get_insert_message(message['header'])
+                            insert_keys, insert_string = get_insert_message(message)
                             database_scheduler_cnx.cursor().execute(f"INSERT INTO {DATABASE_SCHEDULER_SM_TABLE} ({insert_keys}) VALUES ({insert_string})")
                             message_sent = True
                             break

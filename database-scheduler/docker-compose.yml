@@ -1,8 +1,18 @@
 version: '3'
 
 services:
+  database-scheduler:
+    image: abianik/database-scheduler
+    build: ./database-scheduler
+    container_name: database-scheduler
+    environment:
+     - MESSAGE_SIZE_BYTES=100
+     - DATABASE_SCHEDULER_HOST=mysql
+    restart: unless-stopped
+
   mysql:
     image: mysql
+    container_name: mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: kafka
@@ -14,6 +24,7 @@ services:
 
   adminer:
     image: adminer
+    container_name: adminer
     restart: unless-stopped
     ports:
       - 8090:8080
