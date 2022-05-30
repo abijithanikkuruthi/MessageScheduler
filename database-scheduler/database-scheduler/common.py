@@ -62,15 +62,16 @@ def excpetion_info(e=None):
 
 def __get_cnx():
     global cnx
-    try:
-        if not cnx:
-            cnx = mysql.connector.connect(user=DATABASE_SCHEDULER_USER, 
-                                password=DATABASE_SCHEDULER_PASSWORD,
-                              host=DATABASE_SCHEDULER_HOST)
-        return cnx
-    except Exception as e:
-        printwarning(e)
-        return False
+    while True:
+        try:
+            if not cnx:
+                cnx = mysql.connector.connect(user=DATABASE_SCHEDULER_USER, 
+                                    password=DATABASE_SCHEDULER_PASSWORD,
+                                host=DATABASE_SCHEDULER_HOST)
+            return cnx
+        except Exception as e:
+            printwarning(e)
+            time.sleep(1)
 
 def create_database(database_name):
     global cnx

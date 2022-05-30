@@ -9,6 +9,8 @@ services:
      - MESSAGE_SIZE_BYTES=100
      - DATABASE_SCHEDULER_HOST=mysql
     restart: unless-stopped
+    depends_on:
+      - mysql
 
   mysql:
     image: mysql
