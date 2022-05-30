@@ -25,6 +25,8 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: kafka
+    volumes:
+      - ./mongo:/data/db
 
   mongo-express:
     image: mongo-express
