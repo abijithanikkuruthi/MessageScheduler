@@ -3,6 +3,7 @@ version: '3'
 services:
   mysql:
     image: mysql
+    container_name: mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: kafka
@@ -14,6 +15,7 @@ services:
 
   adminer:
     image: adminer
+    container_name: adminer
     restart: unless-stopped
     ports:
       - 8090:8080

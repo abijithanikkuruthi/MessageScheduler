@@ -10,6 +10,11 @@ services:
     environment:
       - KAFKA_SERVER=kafka:9092
       - WORKER_PROCESS_COUNT=1
+      - SM_MINIUMUM_DELAY=60
+      - SM_MAXIUMUM_DELAY=86400
+      - SM_BUCKETS_MULTIPLICATION_RATIO=5
+      - SM_PARTITIONS_PER_BUCKET=16
+      - SM_TOPIC_PARTITIONS=16
   
   messagehandler:
     build: ./MessageHandler
@@ -27,7 +32,7 @@ services:
       - SCHEDULER_SERVER_URL=http://scheduler:8000
     depends_on:
       - scheduler
-    scale: 4
+    scale: 5
 
 networks: 
   default: 
