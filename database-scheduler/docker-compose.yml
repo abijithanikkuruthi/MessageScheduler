@@ -1,0 +1,24 @@
+version: '3'
+
+services:
+  mysql:
+    image: mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: kafka
+      MYSQL_DATABASE: MESSAGES
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: kafka
+    ports:
+      - 3306:3306
+
+  adminer:
+    image: adminer
+    restart: unless-stopped
+    ports:
+      - 8090:8080
+
+networks:
+  default:
+    external:
+      name: kafka-network
