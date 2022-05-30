@@ -12,25 +12,17 @@ class ProgressInfo:
     def __init__(self, total) -> None:
         self.total = total
         self.current = 0
-        self.progress = {
-            '25': False,
-            '50': False,
-            '75': False,
-        }
+        self.progress_keys = ['1', '10', '25', '33' ,'50', '67', '75', '90']
+        self.progress = { k : False for k in self.progress_keys }
     
     def update(self, current):
         self.current = current
         percent = int(self.current / self.total * 100)
         message = None
-        if percent > 25 and not self.progress['25']:
-            self.progress['25'] = True
-            message = '25%'
-        elif percent > 50 and not self.progress['50']:
-            self.progress['50'] = True
-            message = '50%'
-        elif percent > 75 and not self.progress['75']:
-            self.progress['75'] = True
-            message = '75%'
+        for p in self.progress_keys:
+            if percent > int(p) and not self.progress[p]:
+                self.progress[p] = True
+                message = p + '%'
 
         if message:
             printsuccess(f'Progress: {message}')

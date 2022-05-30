@@ -7,7 +7,7 @@ services:
     container_name: messenger
     environment:
       - KAFKA_SERVER=kafka:9092
-      - EXPERIMENT_DURATION_HOURS=0.1
+      - EXPERIMENT_DURATION_HOURS=0.05
       - EXPERIMENT_MESSAGE_COUNT=1000
       - EXPERIMENT_MESSAGE_SIZE=100
       - MESSENGER_SCHEDULER_FREQ=5
