@@ -33,7 +33,6 @@ services:
       - SCHEDULER_SERVER_URL=http://scheduler:8000
     depends_on:
       - scheduler
-    scale: 1
 
 networks: 
   default: 
