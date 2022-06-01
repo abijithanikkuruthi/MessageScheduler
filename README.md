@@ -37,7 +37,7 @@ For cluster deployment, update the environment variables in the YAML files with 
 
 ## Implementation
 
-The implementation comprises 5 modules with different submodules as shown in the above schematic diagram.
+The implementation comprises of 5 modules with different submodules as shown in the above schematic diagram.
 
 ### Kafka
 The Kafka module incorporates a typical Apache Kafka installation and deploys three services - Apache Kafka, Zookeeper and Kafka-UI.
@@ -79,7 +79,7 @@ Grafana UI: http://localhost:3000/dashboards
 
 #### Dashboards for Performance Analysis
 
-http://localhost:3000/d/aRNaJwOmk/kafka-broker-performance-and-latency?orgId=1&refresh=5s
-http://localhost:3000/d/AdG9A1xmk/kafka-brokers-jvm-and-os?orgId=1&refresh=5s
-http://localhost:3000/d/zApgMBbik/kafka-hard-disk-usage?orgId=1&refresh=5s
+http://localhost:3000/d/aRNaJwOmk/kafka-broker-performance-and-latency?orgId=1&refresh=5s <br>
+http://localhost:3000/d/AdG9A1xmk/kafka-brokers-jvm-and-os?orgId=1&refresh=5s <br>
+http://localhost:3000/d/zApgMBbik/kafka-hard-disk-usage?orgId=1&refresh=5s <br>
 http://localhost:3000/d/e-6AJQOik/kafka-cluster-global-healthcheck?orgId=1&refresh=5s
