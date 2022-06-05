@@ -1,12 +1,10 @@
 use rdkafka::config::ClientConfig;
 use rdkafka::consumer::base_consumer::BaseConsumer;
-use rdkafka::message::{OwnedHeaders, Headers, BorrowedHeaders};
+use rdkafka::message::{Headers, BorrowedHeaders};
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use futures::executor;
 
-use rdkafka::client::ClientContext;
-use rdkafka::consumer::{CommitMode, Consumer, ConsumerContext, Rebalance, StreamConsumer};
-use rdkafka::error::KafkaResult;
+use rdkafka::consumer::Consumer;
 use rdkafka::message::{Message};
 use rdkafka::topic_partition_list::TopicPartitionList;
 
@@ -138,7 +136,8 @@ impl Task {
                 loop {
                     match consumer.poll(std::time::Duration::from_secs(get_number(&config, "worker_consumer_timeout"))) {
                         Some(message) => {
-                            let message = message.expect("Task.__run(): Message Unwrap Error");
+                            let message = message.expect("Task.__run(): Message Parse Error");
+                            
                             let headers = message.headers().unwrap();
 
                             let topic_name = __get_topic_name(&config, &headers);
