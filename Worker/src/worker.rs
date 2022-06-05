@@ -191,7 +191,7 @@ impl Task {
                 }
             }
         };
-        multiprocess::worker_process(__run, self.clone())
+        multiprocess::process(__run, self.clone())
     }
 }
 
@@ -251,6 +251,6 @@ impl Worker {
             };
             post_worker(&worker_obj.config, &worker_obj.constants, &worker_obj.work);
         };
-        multiprocess::worker_process(__run, self.clone())
+        multiprocess::process(__run, self.clone())
     }
 }

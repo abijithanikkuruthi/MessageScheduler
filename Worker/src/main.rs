@@ -80,7 +80,7 @@ impl WorkerProcess {
                 std::thread::sleep(std::time::Duration::from_secs(sleep_time));
             }
         };
-        multiprocess::worker_process(__run, self.clone())
+        multiprocess::process(__run, self.clone())
     }
 }
 fn main() {

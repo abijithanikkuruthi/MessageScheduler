@@ -1,9 +1,10 @@
+#![allow(dead_code)]
+
 use chrono;
 use serde_json;
 
 use crate::constants;
 
-#[allow(dead_code)]
 enum Colors {
     Header,
     OkBlue,

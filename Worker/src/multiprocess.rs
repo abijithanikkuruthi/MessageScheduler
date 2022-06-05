@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use nix::unistd::{fork, ForkResult, Pid};
 use nix::sys::wait::{waitpid, WaitStatus};
 use std::process::exit;
@@ -23,24 +25,9 @@ where
     }
 }
 
-pub fn process<F>(func: F) -> JoinHandle
+pub fn process<F, T>(func: F, arg1: T) -> JoinHandle
 where
-    F: Fn(),
-{
-    match unsafe { fork().unwrap() } {
-        ForkResult::Parent { child: pid } => {
-            JoinHandle { pid }
-        }
-        ForkResult::Child => {
-            func();
-            exit(0);
-        }
-    }
-}
-
-pub fn worker_process<F, T>(func: F, arg1: T) -> JoinHandle
-where
-    F: Fn(T)// + Send + 'static,
+    F: Fn(T)
 {
     match unsafe { fork().unwrap() } {
         ForkResult::Parent { child: pid } => {
