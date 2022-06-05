@@ -104,9 +104,8 @@ class JobScheduler(threading.Thread):
                 
                 self.job_stage = (self.job_stage + self.config['min_size']) % self.config['max_size']
 
-                job_object_list = [Job(i) for i in job_list]
-
                 with JobScheduler.JQ_LOCK.acquire_timeout(JOB_QUEUE_THREAD_LOCK_TIMEOUT, 'JobScheduler') as acquired:
+                    job_object_list = [Job(i) for i in job_list if i['name'] not in [j.name for j in JobScheduler.JOB_QUEUE]]
                     JobScheduler.JOB_QUEUE = JobScheduler.JOB_QUEUE + job_object_list
             
             __assign_jobs()
