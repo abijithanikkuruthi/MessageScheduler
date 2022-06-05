@@ -5,16 +5,19 @@ use rdkafka::producer::{FutureProducer, FutureRecord};
 use futures::executor;
 
 use rdkafka::consumer::Consumer;
-use rdkafka::message::{Message};
+use rdkafka::message::Message;
 use rdkafka::topic_partition_list::TopicPartitionList;
+
+use serde_json::Value as Json;
+use serde_json::json;
 
 use crate ::constants::Constants;
 use crate ::common::*;
 use crate ::multiprocess;
 
 struct Task {
-    task : serde_json::Value,
-    config : serde_json::Value,
+    task : Json,
+    config : Json,
     worker_success : multiprocess::SharedMemory<bool>,
     task_id : i32,
 }
@@ -31,7 +34,7 @@ impl Clone for Task {
 }
 
 impl Task {
-    pub fn new(task : serde_json::Value, config : serde_json::Value, worker_success : multiprocess::SharedMemory<bool>, task_id : i32) -> Task {
+    pub fn new(task : Json, config : Json, worker_success : multiprocess::SharedMemory<bool>, task_id : i32) -> Task {
         Task {
             task,
             config,
@@ -43,7 +46,7 @@ impl Task {
     pub fn run(&self) -> multiprocess::JoinHandle {
         let __run = | task_obj : Task | {
             let __task_run = | task_obj : Task | -> Result<(), String> {
-                let __get_topic_name = |config: &serde_json::Value, headers: &BorrowedHeaders| -> Option<String> {
+                let __get_topic_name = |config: &Json, headers: &BorrowedHeaders| -> Option<String> {
                     let mut sm_topic_name = None;
                     let mut sm_time = None;
             
@@ -94,7 +97,7 @@ impl Task {
                     None
                 };
 
-                let __get_hop_count = |headers: &BorrowedHeaders, config: &serde_json::Value| -> i32 {
+                let __get_hop_count = |headers: &BorrowedHeaders, config: &Json| -> i32 {
                     let key = get_string(&config, "sm_header_message_hopcount_key");
                     let hop_count = __get_header(headers, key.as_str());
                     if hop_count == None {
@@ -103,7 +106,7 @@ impl Task {
                     hop_count.unwrap().parse::<i32>().unwrap()
                 };
 
-                let __get_job_id = |headers: &BorrowedHeaders, config: &serde_json::Value| -> String {
+                let __get_job_id = |headers: &BorrowedHeaders, config: &Json| -> String {
                     let key = get_string(&config, "sm_header_job_id_key");
                     let message_id = __get_header(headers, key.as_str());
                     if message_id == None {
@@ -196,10 +199,10 @@ impl Task {
 }
 
 pub struct Worker {
-    config : serde_json::Value,
+    config : Json,
     constants : Constants,
     worker_success : multiprocess::SharedMemory<bool>,
-    work : serde_json::Value
+    work : Json
 }
 
 impl Clone for Worker {
@@ -214,7 +217,7 @@ impl Clone for Worker {
 }
 
 impl Worker {
-    pub fn new(config : serde_json::Value, constants : Constants, work : serde_json::Value) -> Worker {
+    pub fn new(config : Json, constants : Constants, work : Json) -> Worker {
         match multiprocess::SharedMemory::new(true) {
             Ok(worker_success) => {
                 Worker {
@@ -243,10 +246,10 @@ impl Worker {
             let mut worker_obj = worker_obj.clone();
             worker_obj.work["status"] = {
                 if worker_obj.worker_success.get() {
-                    serde_json::json!(worker_obj.config["worker_status_list.done"].as_str().unwrap_or("DONE"))
+                    json!(worker_obj.config["worker_status_list.done"].as_str().unwrap_or("DONE"))
                 } else {
                     print_error(&format!("Worker failed"));
-                    serde_json::json!(worker_obj.config["worker_status_list.error"].as_str().unwrap_or("ERROR"))
+                    json!(worker_obj.config["worker_status_list.error"].as_str().unwrap_or("ERROR"))
                 }
             };
             post_worker(&worker_obj.config, &worker_obj.constants, &worker_obj.work);

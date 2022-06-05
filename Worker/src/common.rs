@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use chrono;
-use serde_json;
+use serde_json::Value as Json;
 
 use crate::constants;
 
@@ -114,7 +114,7 @@ fn post_response(url: &str, body: &str, retries: u8, retry_delay: u8) -> Result<
     Err(format!("Unable to post response to {}", url))
 }
 
-fn get_json_response(url: &str, retries: u8, retry_delay: u8) -> serde_json::Value {
+fn get_json_response(url: &str, retries: u8, retry_delay: u8) -> Json {
     loop {
         match get_response(url, retries, retry_delay) {
             Ok(response) => {
@@ -128,7 +128,7 @@ fn get_json_response(url: &str, retries: u8, retry_delay: u8) -> serde_json::Val
     }
 }
 
-fn post_json_response(url: &str, body: &str, retries: u8, retry_delay: u8) -> serde_json::Value {
+fn post_json_response(url: &str, body: &str, retries: u8, retry_delay: u8) -> Json {
     loop {
         match post_response(url, body, retries, retry_delay) {
             Ok(response) => {
@@ -142,42 +142,42 @@ fn post_json_response(url: &str, body: &str, retries: u8, retry_delay: u8) -> se
     }
 }
 
-pub fn get_config(constants : &constants::Constants) -> serde_json::Value {
+pub fn get_config(constants : &constants::Constants) -> Json {
     let mut config = get_json_response(&format!("{}/config", constants.scheduler_server_url), constants.request_count_limit, constants.request_error_wait_time);
     config["last_updated"] = serde_json::json!(get_time());
     config
 }
 
-pub fn get_worker(config : &serde_json::Value, constants : &constants::Constants) -> serde_json::Value {
+pub fn get_worker(config : &Json, constants : &constants::Constants) -> Json {
     let mut worker = get_json_response(config["worker_url"].as_str().unwrap_or(""), constants.request_count_limit, constants.request_error_wait_time);
     worker["last_updated"] = serde_json::json!(get_time());
     worker
 }
 
-pub fn post_worker(config : &serde_json::Value, constants : &constants::Constants, worker : &serde_json::Value) -> serde_json::Value {
+pub fn post_worker(config : &Json, constants : &constants::Constants, worker : &Json) -> Json {
     let mut worker = post_json_response(config["worker_url"].as_str().unwrap_or(""), &worker.to_string(), constants.request_count_limit, constants.request_error_wait_time);
     worker["last_updated"] = serde_json::json!(get_time());
     worker
 }
 
-pub fn get_number(json : &serde_json::Value, key : &str) -> u64 {
+pub fn get_number(json : &Json, key : &str) -> u64 {
     json[key].as_u64().unwrap_or(0)
 }
 
-pub fn get_float(json : &serde_json::Value, key : &str) -> f64 {
+pub fn get_float(json : &Json, key : &str) -> f64 {
     json[key].as_f64().unwrap_or(0.0)
 }
 
-pub fn get_string(json : &serde_json::Value, key : &str) -> String {
+pub fn get_string(json : &Json, key : &str) -> String {
     json[key].as_str().unwrap_or("").to_string()
 }
 
-pub fn get_list(json : &serde_json::Value, key : &str) -> Vec<serde_json::Value> {
-    let default : Vec<serde_json::Value> = Vec::new();
+pub fn get_list(json : &Json, key : &str) -> Vec<Json> {
+    let default : Vec<Json> = Vec::new();
     json[key].as_array().unwrap_or(&default).to_vec()
 }
 
-pub fn get_object(json : &serde_json::Value, key : &str) -> serde_json::Map<String, serde_json::Value> {
+pub fn get_object(json : &Json, key : &str) -> serde_json::Map<String, Json> {
     json[key].as_object().unwrap_or(&serde_json::Map::new()).to_owned()
 }
 

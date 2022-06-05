@@ -1,4 +1,5 @@
-use serde_json;
+use serde_json::Value as Json;
+use serde_json::json;
 
 mod common;
 mod constants;
@@ -7,7 +8,7 @@ mod multiprocess;
 
 struct WorkerProcess {
     constants: constants::Constants,
-    config : serde_json::Value,
+    config : Json,
 }
 
 impl Clone for WorkerProcess {
@@ -20,7 +21,7 @@ impl Clone for WorkerProcess {
 }
 
 impl WorkerProcess {
-    pub fn new(constants: constants::Constants, config: serde_json::Value) -> WorkerProcess {
+    pub fn new(constants: constants::Constants, config: Json) -> WorkerProcess {
         WorkerProcess {
             constants,
             config
@@ -30,8 +31,8 @@ impl WorkerProcess {
         let __run = |wp: WorkerProcess| {
             let mut config = wp.config.clone();
             let constants = wp.constants.clone();
-            config["worker_id"] = serde_json::json!(common::generate_uuid());
-            config["worker_url"] = serde_json::json!(format!("{}/worker/{}", constants.scheduler_server_url, config["worker_id"].as_str().unwrap_or("")));
+            config["worker_id"] = json!(common::generate_uuid());
+            config["worker_url"] = json!(format!("{}/worker/{}", constants.scheduler_server_url, config["worker_id"].as_str().unwrap_or("")));
             
             loop {
                 let config_clone = config.clone();
@@ -59,7 +60,7 @@ impl WorkerProcess {
                 else if (work_object_status == config["worker_status_list.done"].as_str().unwrap_or("DONE")) ||
                         (work_object_status == config["worker_status_list.error"].as_str().unwrap_or("ERROR")) {
                     let mut work_object = work_object.clone();
-                    work_object["status"] = serde_json::json!(config["worker_status_list.ready"].as_str().unwrap_or("READY"));
+                    work_object["status"] = json!(config["worker_status_list.ready"].as_str().unwrap_or("READY"));
                     let config_clone = config.clone();
                     let constants_clone = constants.clone();
                     let work_object = common::post_worker(&config_clone, &constants_clone, &work_object);
