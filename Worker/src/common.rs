@@ -158,3 +158,32 @@ pub fn post_worker(config : &serde_json::Value, constants : &constants::Constant
     worker["last_updated"] = serde_json::json!(get_time());
     worker
 }
+
+pub fn get_number(json : &serde_json::Value, key : &str) -> u64 {
+    json[key].as_u64().unwrap_or(0)
+}
+
+pub fn get_float(json : &serde_json::Value, key : &str) -> f64 {
+    json[key].as_f64().unwrap_or(0.0)
+}
+
+pub fn get_string(json : &serde_json::Value, key : &str) -> String {
+    json[key].as_str().unwrap_or("").to_string()
+}
+
+pub fn get_list(json : &serde_json::Value, key : &str) -> Vec<serde_json::Value> {
+    let default : Vec<serde_json::Value> = Vec::new();
+    json[key].as_array().unwrap_or(&default).to_vec()
+}
+
+pub fn get_object(json : &serde_json::Value, key : &str) -> serde_json::Map<String, serde_json::Value> {
+    json[key].as_object().unwrap_or(&serde_json::Map::new()).to_owned()
+}
+
+pub fn u8_to_str(u8_list : &[u8]) -> String {
+    let mut string = String::new();
+    for u8_ in u8_list {
+        string.push(*u8_ as char);
+    }
+    string
+}

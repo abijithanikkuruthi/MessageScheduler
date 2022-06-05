@@ -40,7 +40,7 @@ where
 
 pub fn worker_process<F, T>(func: F, arg1: T) -> JoinHandle
 where
-    F: Fn(T) + Send + 'static,
+    F: Fn(T)// + Send + 'static,
 {
     match unsafe { fork().unwrap() } {
         ForkResult::Parent { child: pid } => {
