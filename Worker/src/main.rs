@@ -6,8 +6,11 @@ mod constants;
 mod worker;
 mod multiprocess;
 
+use common::*;
+use constants::Constants;
+
 struct WorkerProcess {
-    constants: constants::Constants,
+    constants: Constants,
     config : Json,
 }
 
@@ -21,7 +24,7 @@ impl Clone for WorkerProcess {
 }
 
 impl WorkerProcess {
-    pub fn new(constants: constants::Constants, config: Json) -> WorkerProcess {
+    pub fn new(constants: Constants, config: Json) -> WorkerProcess {
         WorkerProcess {
             constants,
             config
@@ -31,20 +34,20 @@ impl WorkerProcess {
         let __run = |wp: WorkerProcess| {
             let mut config = wp.config.clone();
             let constants = wp.constants.clone();
-            config["worker_id"] = json!(common::generate_uuid());
+            config["worker_id"] = json!(generate_uuid());
             config["worker_url"] = json!(format!("{}/worker/{}", constants.scheduler_server_url, config["worker_id"].as_str().unwrap_or("")));
             
             loop {
                 let config_clone = config.clone();
                 let constants_clone = constants.clone();
-                let work_object = common::get_worker(&config_clone, &constants_clone);
+                let work_object = get_worker(&config_clone, &constants_clone);
                 let work_object_status = work_object["status"].as_str().unwrap_or("ERROR");
 
                 // READY state - Wait for a task
                 if work_object_status == config["worker_status_list.ready"].as_str().unwrap_or("READY") {
                     let config_clone = config.clone();
                     let constants_clone = constants.clone();
-                    let work_object = common::post_worker(&config_clone, &constants_clone, &work_object);
+                    let work_object = post_worker(&config_clone, &constants_clone, &work_object);
                     let work_object_status = work_object["status"].as_str().unwrap_or("ERROR");
                     if work_object_status == config["worker_status_list.working"].as_str().unwrap_or("WORKING") {
                         worker::Worker::new(config.clone(), constants.clone(), work_object.clone()).run();
@@ -63,7 +66,7 @@ impl WorkerProcess {
                     work_object["status"] = json!(config["worker_status_list.ready"].as_str().unwrap_or("READY"));
                     let config_clone = config.clone();
                     let constants_clone = constants.clone();
-                    let work_object = common::post_worker(&config_clone, &constants_clone, &work_object);
+                    let work_object = post_worker(&config_clone, &constants_clone, &work_object);
                     let work_object_status = work_object["status"].as_str().unwrap_or("ERROR");
                     if work_object_status == config["worker_status_list.working"].as_str().unwrap_or("WORKING") {
                         worker::Worker::new(config.clone(), constants.clone(), work_object.clone()).run();
@@ -85,14 +88,14 @@ impl WorkerProcess {
     }
 }
 fn main() {
-    let constants = constants::Constants::new();
-    let config = common::get_config(&constants);
+    let constants = Constants::new();
+    let config = get_config(&constants);
     
     // create worker processes
     let mut worker_processes = Vec::new();
     for _ in 0..config["worker_process_count"].as_u64().unwrap_or(1) {
         worker_processes.push(WorkerProcess::new(constants.clone(), config.clone()).run());
     }
-    common::print_ok(format!("Worker Service Started in {} processes", config["worker_process_count"].as_u64().unwrap_or(1)).as_str());
+    print_ok(format!("Worker Service Started in {} processes", config["worker_process_count"].as_u64().unwrap_or(1)).as_str());
     worker_processes.pop().unwrap().join();
 }

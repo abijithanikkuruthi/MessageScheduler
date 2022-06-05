@@ -25,7 +25,7 @@ where
     }
 }
 
-pub fn process<F, T>(func: F, arg1: T) -> JoinHandle
+pub fn process<F, T>(func: F, arg: T) -> JoinHandle
 where
     F: Fn(T)
 {
@@ -34,7 +34,7 @@ where
             JoinHandle { pid }
         }
         ForkResult::Child => {
-            func(arg1);
+            func(arg);
             exit(0);
         }
     }

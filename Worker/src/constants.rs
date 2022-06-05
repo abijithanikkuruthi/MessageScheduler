@@ -2,7 +2,6 @@ use std::env;
 
 pub struct Constants {
     pub debug: bool,
-
     pub scheduler_server_url: String,
     pub request_error_wait_time: u8,
     pub request_count_limit: u8,

@@ -13,12 +13,12 @@ use serde_json::json;
 
 use crate ::constants::Constants;
 use crate ::common::*;
-use crate ::multiprocess;
+use crate ::multiprocess as mp;
 
 struct Task {
     task : Json,
     config : Json,
-    worker_success : multiprocess::SharedMemory<bool>,
+    worker_success : mp::SharedMemory<bool>,
     task_id : i32,
 }
 
@@ -34,7 +34,7 @@ impl Clone for Task {
 }
 
 impl Task {
-    pub fn new(task : Json, config : Json, worker_success : multiprocess::SharedMemory<bool>, task_id : i32) -> Task {
+    pub fn new(task : Json, config : Json, worker_success : mp::SharedMemory<bool>, task_id : i32) -> Task {
         Task {
             task,
             config,
@@ -43,7 +43,7 @@ impl Task {
         }
     }
     
-    pub fn run(&self) -> multiprocess::JoinHandle {
+    pub fn run(&self) -> mp::JoinHandle {
         let __run = | task_obj : Task | {
             let __task_run = | task_obj : Task | -> Result<(), String> {
                 let __get_topic_name = |config: &Json, headers: &BorrowedHeaders| -> Option<String> {
@@ -194,14 +194,14 @@ impl Task {
                 }
             }
         };
-        multiprocess::process(__run, self.clone())
+        mp::process(__run, self.clone())
     }
 }
 
 pub struct Worker {
     config : Json,
     constants : Constants,
-    worker_success : multiprocess::SharedMemory<bool>,
+    worker_success : mp::SharedMemory<bool>,
     work : Json
 }
 
@@ -218,7 +218,7 @@ impl Clone for Worker {
 
 impl Worker {
     pub fn new(config : Json, constants : Constants, work : Json) -> Worker {
-        match multiprocess::SharedMemory::new(true) {
+        match mp::SharedMemory::new(true) {
             Ok(worker_success) => {
                 Worker {
                     config,
@@ -233,7 +233,7 @@ impl Worker {
             }
         }
     }
-    pub fn run(&self) -> multiprocess::JoinHandle {
+    pub fn run(&self) -> mp::JoinHandle {
         let __run = |worker_obj : Worker| {
             let mut tasks = Vec::new();
             for task_id in 0..worker_obj.config["sm_partitions_per_bucket"].as_i64().unwrap_or(16) {
@@ -254,6 +254,6 @@ impl Worker {
             };
             post_worker(&worker_obj.config, &worker_obj.constants, &worker_obj.work);
         };
-        multiprocess::process(__run, self.clone())
+        mp::process(__run, self.clone())
     }
 }
