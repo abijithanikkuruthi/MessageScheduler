@@ -173,7 +173,7 @@ impl Task {
                                     return Err(err_msg);
                                 }
                             }
-                        }
+                        },
                         None => {
                             break;
                         }
