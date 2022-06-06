@@ -51,7 +51,6 @@ MESSAGES_TABLE_SCHEMA = {
     'topic':                            'VARCHAR(50)',
     'time' :                            'DATETIME',
     'value':                          f'VARCHAR({MESSAGE_SIZE_BYTES})',
-    'delivered':                        'BOOLEAN',
     EXPERIMENT_ID_KEY :                 'VARCHAR(50)',
     EXPERIMENT_MESSAGE_CREATION_KEY :   'VARCHAR(50)',
 }

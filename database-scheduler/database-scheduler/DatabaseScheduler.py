@@ -20,7 +20,7 @@ class DatabaseScheduler(multiprocessing.Process):
             cur_time = (datetime.datetime.now() + datetime.timedelta(seconds=DATABASE_SCHEDULER_FREQ)).strftime(TIME_FORMAT)
             msg_headers = [i for i in MESSAGES_TABLE_SCHEMA.keys() if i != DATABASE_MESSAGE_RECIEVED_KEY]
 
-            cursor.execute(f"SELECT {', '.join(msg_headers)} FROM {DATABASE_SCHEDULER_SM_TABLE} WHERE `time` < '{cur_time}' AND `delivered` IS NULL")
+            cursor.execute(f"SELECT {', '.join(msg_headers)} FROM {DATABASE_SCHEDULER_SM_TABLE} WHERE `time` < '{cur_time}'")
             query_list = []
 
             for message in cursor:
@@ -29,7 +29,7 @@ class DatabaseScheduler(multiprocessing.Process):
                 insert_values = [f"'{str(i)}'" for i in list(message) + [datetime.datetime.now().strftime(TIME_FORMAT)]]
 
                 query_list.append(f"INSERT INTO {DATABASE_SCHEDULER_RECIPIENT_TABLE} ({', '.join(insert_keys)}) VALUES ({', '.join(insert_values)})")
-                query_list.append(f"UPDATE {DATABASE_SCHEDULER_SM_TABLE} SET `delivered` = '1' WHERE `{MESSAGE_ID_KEY}` = '{message_id}'")
+                query_list.append(f"DELETE FROM {DATABASE_SCHEDULER_SM_TABLE} WHERE `{MESSAGE_ID_KEY}` = '{message_id}'")
             
             for q in query_list:
                 cursor.execute(q)
