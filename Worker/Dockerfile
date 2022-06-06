@@ -1,8 +1,7 @@
-FROM python:3
+FROM rust:1.61.0
 
 COPY . /app
 WORKDIR /app
 ENV TZ=Europe/Amsterdam
-ENV PYTHONUNBUFFERED=TRUE
 RUN sh setup.sh
 CMD [ "sh", "run.sh" ]
