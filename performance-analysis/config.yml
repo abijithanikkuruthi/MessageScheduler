@@ -1,0 +1,15 @@
+data_path : 'data/$timestamp$/'
+
+monitoring:
+  docker : 'monitoring/docker-monitor/logs'
+  prometheus : 'monitoring/prometheus'
+
+message-database:
+  enabled : True
+  url : mongodb://admin:kafka@localhost:27017/
+
+database-scheduler:
+  enabled : True
+  host : localhost
+  user : root
+  password : kafka
