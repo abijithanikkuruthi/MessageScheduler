@@ -11,6 +11,8 @@ use rdkafka::topic_partition_list::TopicPartitionList;
 use serde_json::Value as Json;
 use serde_json::json;
 
+use std::process::exit;
+
 use crate ::constants::Constants;
 use crate ::common::*;
 use crate ::multiprocess as mp;
@@ -193,6 +195,7 @@ impl Task {
                     worker_success.set(false);
                 }
             }
+            exit(0);
         };
         mp::process(__run, self.clone())
     }
@@ -253,6 +256,7 @@ impl Worker {
                 }
             };
             post_worker(&worker_obj.config, &worker_obj.constants, &worker_obj.work);
+            exit(0);
         };
         mp::process(__run, self.clone())
     }

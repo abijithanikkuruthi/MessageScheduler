@@ -7,9 +7,13 @@ monitoring:
 message-database:
   enabled : True
   url : mongodb://admin:kafka@localhost:27017/
+  database : MESSAGES
+  table : MESSAGES_RECIEVED
 
 database-scheduler:
   enabled : True
   host : localhost
   user : root
   password : kafka
+  database : MESSAGES
+  table : MESSAGES_RECIEVED

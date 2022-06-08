@@ -5,7 +5,7 @@ DEBUG = (os.getenv('DEBUG', 'False') == 'True')
 
 # KAFKA Settings
 KAFKA_SERVER = os.getenv('KAFKA_SERVER', 'localhost:9092')
-KAFKA_APPLICATION_RESTART_TIME = 60 * 60 * 1 # 1 hour
+KAFKA_APPLICATION_RESTART_TIME = 5 * 60 # 5 minutes
 
 # Scheduled Messages Topic Settings
 SM_TOPIC = 'SCHEDULED_MESSAGES'
