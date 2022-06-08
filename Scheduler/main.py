@@ -22,7 +22,7 @@ def setup():
             create_topics([ { 
                 'name' : i['name'],
                 'num_partitions' : SM_PARTITIONS_PER_BUCKET, 
-                'retention' : (SM_BUCKETS_MULTIPLICATION_RATIO * i['lower'])
+                'retention' : max(SM_BUCKETS_MULTIPLICATION_RATIO * i['lower'], KAFKA_APPLICATION_RESTART_TIME)
             } for i in get_bucket_object_list() ])
             return True
         except Exception as e:
