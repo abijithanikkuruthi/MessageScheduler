@@ -3,6 +3,7 @@
 use nix::unistd::{fork, ForkResult, Pid};
 use nix::sys::wait::{waitpid, WaitStatus};
 use std::process::exit;
+use nix::sys::signal::kill;
 use nix::sys::mman::{mmap, munmap, ProtFlags, MapFlags};
 use nix::sys::memfd::{memfd_create, MemFdCreateFlag};
 use nix::unistd::close;
@@ -41,12 +42,15 @@ where
 }
 
 pub struct JoinHandle {
-    pid: Pid,
+    pub pid: Pid,
 }
 
 impl JoinHandle {
     pub fn join(self) -> CompletedProcess {
         CompletedProcess { status: waitpid(self.pid, None).unwrap_or(WaitStatus::StillAlive) }
+    }
+    pub fn kill(self) -> Result<(), Errno> {
+        kill(self.pid, nix::sys::signal::Signal::SIGKILL)
     }
 }
 
@@ -106,6 +110,7 @@ impl<T> Drop for SharedMemory<T> {
 
 impl<T> Clone for SharedMemory<T> {
     fn clone(&self) -> Self {
+        // Do not clean the memory if child process drops the value. Cleanup only when the process that called ::new() drops the value.
         SharedMemory { mem: self.mem, cleanup: false }
     }
 }

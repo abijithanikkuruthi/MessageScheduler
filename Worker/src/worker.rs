@@ -11,6 +11,8 @@ use rdkafka::topic_partition_list::TopicPartitionList;
 use serde_json::Value as Json;
 use serde_json::json;
 
+use std::process::exit;
+
 use crate ::constants::Constants;
 use crate ::common::*;
 use crate ::multiprocess as mp;
@@ -108,11 +110,11 @@ impl Task {
 
                 let __get_job_id = |headers: &BorrowedHeaders, config: &Json| -> String {
                     let key = get_string(&config, "sm_header_job_id_key");
-                    let message_id = __get_header(headers, key.as_str());
-                    if message_id == None {
+                    let job_id = __get_header(headers, key.as_str());
+                    if job_id == None {
                         return "".to_string();
                     }
-                    message_id.unwrap()
+                    job_id.unwrap()
                 };
 
                 let task = task_obj.task.clone();
@@ -159,7 +161,8 @@ impl Task {
                                 FutureRecord::to(&topic_name)
                                     .payload(message.payload().unwrap_or_default())
                                     .key(message.key().unwrap_or_default())
-                                    .headers(msg_headers),
+                                    .headers(msg_headers)
+                                    .partition(task_id),
                                 std::time::Duration::from_secs(0),
                             )) {
                                 Ok(_) => {
@@ -184,15 +187,14 @@ impl Task {
             };
             let worker_success = task_obj.worker_success.clone();
             match __task_run(task_obj) {
-                Ok(_) => {
-                    worker_success.set(true);
-                },
+                Ok(_) => {},
                 Err(e) => {
                     let error_msg = format!("Task.__run: {}", e);
                     print_error(error_msg.as_str());
                     worker_success.set(false);
                 }
             }
+            exit(0);
         };
         mp::process(__run, self.clone())
     }
@@ -253,6 +255,7 @@ impl Worker {
                 }
             };
             post_worker(&worker_obj.config, &worker_obj.constants, &worker_obj.work);
+            exit(0);
         };
         mp::process(__run, self.clone())
     }

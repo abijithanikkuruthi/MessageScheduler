@@ -112,7 +112,11 @@ def create_topics(topic_list) -> bool:
     topicobject_list = [ NewTopic(topic = i['name'],
                                     num_partitions = i['num_partitions'],
                                     replication_factor = 1,
-                                    config = { 'retention.ms': i['retention'] * 1000 }) for i in topic_list ]
+                                    config = { 'retention.ms': i['retention'] * 1000,
+                                                'delete.retention.ms' : i['retention'] * 1000,
+                                                'segment.ms' : i['retention'] * 1000,
+                                                'flush.ms' : i['retention'] * 1000,
+                                     }) for i in topic_list ]
     t = admin_client.create_topics(topicobject_list)
     for topic, f in t.items():
         try:

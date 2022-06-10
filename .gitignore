@@ -6,3 +6,5 @@ test.py
 
 database-scheduler/mysql/
 message-database/mongo/
+
+data/

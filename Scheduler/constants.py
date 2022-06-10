@@ -5,7 +5,7 @@ DEBUG = (os.getenv('DEBUG', 'False') == 'True')
 
 # KAFKA Settings
 KAFKA_SERVER = os.getenv('KAFKA_SERVER', 'localhost:9092')
-KAFKA_APPLICATION_RESTART_TIME = 60 * 60 * 1 # 1 hour
+KAFKA_APPLICATION_RESTART_TIME = 5 * 60 # 5 minutes
 
 # Scheduled Messages Topic Settings
 SM_TOPIC = 'SCHEDULED_MESSAGES'
@@ -51,7 +51,7 @@ WORKER_TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 WORKER_QUEUE_THREAD_LOCK_TIMEOUT = 5
 WORKER_STALE_TIME = 45
 WORKER_PROCESS_COUNT = int(os.getenv('WORKER_PROCESS_COUNT', 8))
-WORKER_CONSUMER_TIMEOUT = 15
+WORKER_CONSUMER_TIMEOUT = 10
 
 # Configuration Server Settings
 SERVER_HOST = '0.0.0.0'

@@ -4,7 +4,7 @@ import os
 import time
 import docker
 
-WORKING_FOLDER = f'{LOGS_FOLDER}{os.sep}{getTime("%Y-%m-%d %H-%M-%S")}'
+WORKING_FOLDER = f'{LOGS_FOLDER}'
 
 CONFIG_FILE_PATH = f'{WORKING_FOLDER}{os.sep}{CONFIG_FILE}'
 
