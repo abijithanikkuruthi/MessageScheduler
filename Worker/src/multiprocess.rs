@@ -11,6 +11,8 @@ use nix::errno::Errno;
 use std::ffi::CString;
 use std::os::raw::c_void;
 
+use libc::{signal, SIGCHLD, SIG_IGN};
+
 pub fn spawn<F, T>(func: F, args: &[T]) -> JoinHandle
 where
     F: Fn(&[T]) + Send + 'static,
@@ -32,6 +34,8 @@ where
 {
     match unsafe { fork().unwrap() } {
         ForkResult::Parent { child: pid } => {
+            // Avoiding zombie processes creation
+            unsafe { signal(SIGCHLD, SIG_IGN); }
             JoinHandle { pid }
         }
         ForkResult::Child => {
