@@ -1,6 +1,6 @@
 from Messenger import Messenger
 from Collector import Collector
-from common import create_topics, create_database, create_table
+from common import create_topics, create_keyspace, create_table
 from constants import *
 
 def setup():
@@ -14,16 +14,15 @@ def setup():
         }])
 
     if DATABASE_SCHEDULER_ENABLED:
-        # Database Scheduler Setup
-        create_database(DATABASE_SCHEDULER_DATABASE)
+        create_keyspace(DATABASE_SCHEDULER_KEYSPACE)
 
         messages_table_schema = ""
         for k, v in MESSAGES_TABLE_SCHEMA.items():
-            messages_table_schema += f"`{k}` {v}, "
+            messages_table_schema += f"{k.replace('__', '')} {v}, "
         
-        messages_table_schema = messages_table_schema[:-2]
+        messages_table_schema += f" PRIMARY KEY ({MESSAGE_ID_KEY.replace('__', '')}, time)"
         
-        create_table(DATABASE_SCHEDULER_SM_TABLE, messages_table_schema)
+        create_table(DATABASE_SCHEDULER_KEYSPACE, DATABASE_SCHEDULER_SM_TABLE, messages_table_schema)
 
 if __name__ == '__main__':
     setup()

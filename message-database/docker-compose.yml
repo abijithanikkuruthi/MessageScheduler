@@ -12,7 +12,7 @@ services:
       - MESSAGE_SIZE_BYTES=10
       - MESSENGER_SCHEDULER_FREQ=45
       - MESSAGE_DATABASE_URL=mongodb://admin:kafka@mongo:27017/
-      - DATABASE_SCHEDULER_HOST=mysql
+      - DATABASE_SCHEDULER_HOST=cassandra
       - MESSAGE_DATABASE_ENABLED=True
       - DATABASE_SCHEDULER_ENABLED=True
     depends_on:

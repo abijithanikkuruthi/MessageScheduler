@@ -6,7 +6,7 @@ import datetime
 from random import randrange
 from confluent_kafka import Producer
 from pymongo import MongoClient
-import mysql.connector
+from cassandra.cluster import Cluster
 
 class ProgressInfo:
     def __init__(self, total) -> None:
@@ -103,21 +103,19 @@ class Messenger(multiprocessing.Process):
             # Database Scheduler
             if DATABASE_SCHEDULER_ENABLED:
                 def __database_scheduler_send(message_list):
-                    database_scheduler_cnx = mysql.connector.connect(user=DATABASE_SCHEDULER_USER, 
-                                    password=DATABASE_SCHEDULER_PASSWORD,
-                                    host=DATABASE_SCHEDULER_HOST,
-                                    database=DATABASE_SCHEDULER_DATABASE)
+                    cluster = Cluster([DATABASE_SCHEDULER_HOST])
+                    session = cluster.connect()
+                    session.set_keyspace(DATABASE_SCHEDULER_KEYSPACE.lower())
                     msg_errors = 0
                     for message in message_list:
                         try:
                             insert_keys, insert_string = get_insert_message(message)
-                            database_scheduler_cnx.cursor().execute(f"INSERT INTO {DATABASE_SCHEDULER_SM_TABLE} ({insert_keys}) VALUES ({insert_string})")
+                            session.execute(f"INSERT INTO {DATABASE_SCHEDULER_SM_TABLE.lower()} ({insert_keys}) VALUES ({insert_string})")
                         except Exception as e:
                             msg_errors += 1
                     if msg_errors > 0:
                         printwarning(f'{msg_errors} messages failed to send to mysql DB')
-                    database_scheduler_cnx.commit()
-                    database_scheduler_cnx.close()
+                    cluster.shutdown()
                 scheduler_process = multiprocessing.Process(target=__database_scheduler_send, args=(message_list,))
                 scheduler_process.start()
 

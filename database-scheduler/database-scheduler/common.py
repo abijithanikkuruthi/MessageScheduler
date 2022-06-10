@@ -3,9 +3,8 @@ import time
 import uuid
 import random
 import string
-import mysql.connector
-from mysql.connector import errorcode
 from datetime import datetime, timedelta, date
+from cassandra.cluster import Cluster
 
 CACHE = {}
 cnx = None
@@ -60,64 +59,31 @@ def excpetion_info(e=None):
     printerror(f"File name: {filename}")
     printerror(f"Line number: {line_number}")
 
-def __get_cnx():
-    global cnx
-    while True:
-        try:
-            if not cnx:
-                cnx = mysql.connector.connect(user=DATABASE_SCHEDULER_USER, 
-                                    password=DATABASE_SCHEDULER_PASSWORD,
-                                host=DATABASE_SCHEDULER_HOST)
-            return cnx
-        except Exception as e:
-            printwarning(e)
-            time.sleep(1)
-
-def create_database(database_name):
-    global cnx
-    try:
-        cnx = __get_cnx()
-        cursor = cnx.cursor()
-        cursor.execute("CREATE DATABASE {} DEFAULT CHARACTER SET 'utf8'".format(database_name))
-        cnx.commit()
-        cursor.close()
-        cnx.close()
-        cnx = mysql.connector.connect(user=DATABASE_SCHEDULER_USER, 
-                                password=DATABASE_SCHEDULER_PASSWORD,
-                              host=DATABASE_SCHEDULER_HOST,
-                              database=database_name)
-        printsuccess(f'Created database: {database_name}')
+def create_keyspace(name):
+    try:     
+        cluster = Cluster([DATABASE_SCHEDULER_HOST])
+        session = cluster.connect()
+        session.execute(f'CREATE KEYSPACE {name} WITH replication = {{\'class\': \'SimpleStrategy\', \'replication_factor\': 1}};')
+        cluster.shutdown()
+        printsuccess(f"Created keyspace {name}")
+        return True
     except Exception as e:
-        cnx.close()
-        cnx = mysql.connector.connect(user=DATABASE_SCHEDULER_USER, 
-                                password=DATABASE_SCHEDULER_PASSWORD,
-                              host=DATABASE_SCHEDULER_HOST,
-                              database=database_name)
-        printwarning("Failed creating database: {}".format(e))
+        printwarning(f"Error creating keyspace {name}: {e}")
+        cluster.shutdown()
 
-def create_table(table_name, table_schema):
+def create_table(keyspace_name, table_name, table_schema):
     try:
-        cnx = __get_cnx()
-        cursor = cnx.cursor()
-        cursor.execute(f"CREATE TABLE {table_name} ({table_schema})")
-        cnx.commit()
-        cursor.close()
-        printsuccess(f'Created table: {table_name}')
+        cluster = Cluster([DATABASE_SCHEDULER_HOST])
+        session = cluster.connect()
+        session.set_keyspace(keyspace_name.lower())
+        query = f'CREATE TABLE {table_name} ({table_schema});'
+        session.execute(query)
+        cluster.shutdown()
+        printsuccess(f"Created table {table_name}")
+        return True
     except Exception as e:
-        printwarning("Failed creating table: {}".format(e))
-
-def insert_data(table_name, data):
-    try:
-        cnx = __get_cnx()
-        cursor = cnx.cursor()
-        cursor.execute(f"INSERT INTO {table_name} VALUES ({data})")
-        cnx.commit()
-        cursor.close()
-    except Exception as e:
-        printwarning("Failed inserting data: {}".format(e))
-
-def insert_message(table_name, message):
-    insert_data(table_name, get_insert_message(message))
+        printwarning(f"Error creating table {table_name}: {e}")
+        cluster.shutdown()
 
 def get_insert_message(message):
     insert_message = ""
