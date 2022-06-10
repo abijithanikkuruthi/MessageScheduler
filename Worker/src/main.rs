@@ -8,6 +8,7 @@ mod multiprocess;
 
 use common::*;
 use constants::Constants;
+use multiprocess as mp;
 
 struct WorkerProcess {
     constants: Constants,
@@ -30,7 +31,7 @@ impl WorkerProcess {
             config
         }
     }
-    pub fn run(&self) -> multiprocess::JoinHandle {
+    pub fn run(&self) -> mp::JoinHandle {
         let __run = |wp: WorkerProcess| {
             let mut config = wp.config.clone();
             let constants = wp.constants.clone();
@@ -80,7 +81,7 @@ impl WorkerProcess {
                     _ => {
                         config["worker_ready_poll_freq"].as_u64().unwrap_or(1)
                     }
-                };
+                };    
                 std::thread::sleep(std::time::Duration::from_secs(sleep_time));
             }
         };

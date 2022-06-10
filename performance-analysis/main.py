@@ -48,12 +48,12 @@ def analyse(config):
     
 
 if __name__ == '__main__':
-    # config = get_config()
+    config = get_config()
 
-    # collect(config)
+    collect(config)
 
     # print(config)
     
-    config = {'data_path': '/mnt/Media Drive/Academics/Thesis/MessageScheduler/data/2022-06-07 11-03-05', 'monitoring': {'docker': '/mnt/Media Drive/Academics/Thesis/MessageScheduler/monitoring/docker-monitor/logs', 'prometheus': '/mnt/Media Drive/Academics/Thesis/MessageScheduler/monitoring/prometheus'}, 'message-database': {'enabled': True, 'url': 'mongodb://admin:kafka@localhost:27017/', 'database': 'MESSAGES', 'table': 'MESSAGES_RECIEVED'}, 'database-scheduler': {'enabled': True, 'host': 'localhost', 'user': 'root', 'password': 'kafka', 'database': 'MESSAGES', 'table': 'MESSAGES_RECIEVED'}}
+    # config = {'data_path': '/mnt/Media Drive/Academics/Thesis/MessageScheduler/data/2022-06-10 12-20-53', 'monitoring': {'docker': '/mnt/Media Drive/Academics/Thesis/MessageScheduler/monitoring/docker-monitor/logs', 'prometheus': '/mnt/Media Drive/Academics/Thesis/MessageScheduler/monitoring/prometheus'}, 'message-database': {'enabled': True, 'url': 'mongodb://admin:kafka@localhost:27017/', 'database': 'MESSAGES', 'table': 'MESSAGES_RECIEVED'}, 'database-scheduler': {'enabled': True, 'host': 'localhost', 'user': 'root', 'password': 'kafka', 'database': 'MESSAGES', 'table': 'MESSAGES_RECIEVED'}}
 
     analyse(config)
