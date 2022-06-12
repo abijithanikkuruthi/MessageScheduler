@@ -28,7 +28,7 @@ EXPERIMENT_MESSAGE_CREATION_KEY = os.getenv('EXPERIMENT_MESSAGE_CREATION_KEY', '
 EXPERIMENT_DURATION_HOURS = float(os.getenv('EXPERIMENT_DURATION_HOURS', '1'))
 EXPERIMENT_MESSAGE_COUNT = int(os.getenv('EXPERIMENT_MESSAGE_COUNT', '10000'))
 
-MESSENGER_SCHEDULER_FREQ = int(os.getenv('MESSENGER_SCHEDULER_FREQ', '5'))
+MESSENGER_SCHEDULER_FREQ = int(os.getenv('MESSENGER_SCHEDULER_FREQ', '60'))
 
 COLLECTOR_PROCESS_COUNT = int(os.getenv('COLLECTOR_PROCESS_COUNT', '8'))
 COLLECTOR_CONSUMER_TIMEOUT = int(os.getenv('COLLECTOR_CONSUMER_TIMEOUT', '15'))
@@ -42,15 +42,15 @@ DATABASE_SCHEDULER_ENABLED = (os.getenv('DATABASE_SCHEDULER_ENABLED', 'True') ==
 DATABASE_SCHEDULER_USER = os.getenv('DATABASE_SCHEDULER_USER', 'root')
 DATABASE_SCHEDULER_PASSWORD = os.getenv('DATABASE_SCHEDULER_PASSWORD', 'kafka')
 DATABASE_SCHEDULER_HOST = os.getenv('DATABASE_SCHEDULER_HOST', 'localhost')
-DATABASE_SCHEDULER_DATABASE = os.getenv('DATABASE_SCHEDULER_DATABASE', 'MESSAGES')
+DATABASE_SCHEDULER_KEYSPACE = os.getenv('DATABASE_SCHEDULER_KEYSPACE', 'MESSAGES')
 DATABASE_SCHEDULER_SM_TABLE = os.getenv('DATABASE_SCHEDULER_SM_TABLE', 'MESSAGES')
 
 
 MESSAGES_TABLE_SCHEMA = {
-    MESSAGE_ID_KEY :                    'VARCHAR(50)',
-    'topic':                            'VARCHAR(50)',
-    'time' :                            'DATETIME',
-    'value':                          f'VARCHAR({MESSAGE_SIZE_BYTES})',
-    EXPERIMENT_ID_KEY :                 'VARCHAR(50)',
-    EXPERIMENT_MESSAGE_CREATION_KEY :   'VARCHAR(50)',
+    MESSAGE_ID_KEY :                    'text',
+    'topic':                            'text',
+    'time' :                            'timestamp',
+    'value':                            'text',
+    EXPERIMENT_ID_KEY :                 'text',
+    EXPERIMENT_MESSAGE_CREATION_KEY :   'text',
 }

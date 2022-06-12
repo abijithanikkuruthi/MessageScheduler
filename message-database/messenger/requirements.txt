@@ -1,4 +1,4 @@
 requests==2.27.1
 confluent-kafka==1.8.2
 pymongo==4.1.1
-mysql-connector-python==8.0.29
+cassandra-driver==3.25.0

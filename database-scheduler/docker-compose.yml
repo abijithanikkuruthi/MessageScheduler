@@ -6,30 +6,30 @@ services:
     build: ./database-scheduler
     container_name: database-scheduler
     environment:
-     - MESSAGE_SIZE_BYTES=100
-     - DATABASE_SCHEDULER_HOST=mysql
+     - DATABASE_SCHEDULER_HOST=cassandra
     restart: unless-stopped
     depends_on:
-      - mysql
+      - cassandra
 
-  mysql:
-    image: mysql
-    container_name: mysql
+  cassandra:
+    image: cassandra:4.0.4
+    container_name: cassandra
     restart: unless-stopped
+    ports:
+      - 9042:9042
+  
+  cassandra-web:
+    image: ipushc/cassandra-web
+    container_name: cassandra-web
+    restart: unless-stopped
+    depends_on:
+      - cassandra
     environment:
-      MYSQL_ROOT_PASSWORD: kafka
-      MYSQL_DATABASE: MESSAGES
-      MYSQL_USER: admin
-      MYSQL_PASSWORD: kafka
+      - CASSANDRA_HOST=cassandra
+    links:
+      - cassandra
     ports:
-      - 3306:3306
-
-  adminer:
-    image: adminer
-    container_name: adminer
-    restart: unless-stopped
-    ports:
-      - 8090:8080
+      - 8090:8083
 
 networks:
   default:
