@@ -6,7 +6,6 @@ services:
     build: ./database-scheduler
     container_name: database-scheduler
     environment:
-     - MESSAGE_SIZE_BYTES=100
      - DATABASE_SCHEDULER_HOST=cassandra
     restart: unless-stopped
     depends_on:

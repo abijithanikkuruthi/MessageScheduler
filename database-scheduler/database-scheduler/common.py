@@ -66,15 +66,14 @@ def create_keyspace(name):
             session = cluster.connect()
             break
         except Exception as e:
-            printwarning(f"Error connecting to database: {e}\nRetrying...")
+            time.sleep(REQUEST_ERROR_WAIT_TIME)
         
     try:
         session.execute(f'CREATE KEYSPACE {name.lower()} WITH replication = {{\'class\': \'SimpleStrategy\', \'replication_factor\': 1}};')
-        cluster.shutdown()
         printsuccess(f"Created keyspace {name.lower()}")
-        return True
     except Exception as e:
         printwarning(f"Error creating keyspace {name}: {e}")
+    finally:
         cluster.shutdown()
 
 def create_table(keyspace_name, table_name, table_schema):
@@ -84,7 +83,7 @@ def create_table(keyspace_name, table_name, table_schema):
             session = cluster.connect()
             break
         except Exception as e:
-            printwarning(f"Error connecting to database: {e}\nRetrying...")
+            time.sleep(REQUEST_ERROR_WAIT_TIME)
         
     try:
         cluster = Cluster([DATABASE_SCHEDULER_HOST])
@@ -97,6 +96,7 @@ def create_table(keyspace_name, table_name, table_schema):
         return True
     except Exception as e:
         printwarning(f"Error creating table {table_name}: {e}")
+    finally:
         cluster.shutdown()
 
 def get_insert_message(message):
