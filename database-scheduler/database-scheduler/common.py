@@ -60,23 +60,37 @@ def excpetion_info(e=None):
     printerror(f"Line number: {line_number}")
 
 def create_keyspace(name):
-    try:     
-        cluster = Cluster([DATABASE_SCHEDULER_HOST])
-        session = cluster.connect()
-        session.execute(f'CREATE KEYSPACE {name} WITH replication = {{\'class\': \'SimpleStrategy\', \'replication_factor\': 1}};')
+    while True:
+        try:     
+            cluster = Cluster([DATABASE_SCHEDULER_HOST])
+            session = cluster.connect()
+            break
+        except Exception as e:
+            printwarning(f"Error connecting to database: {e}\nRetrying...")
+        
+    try:
+        session.execute(f'CREATE KEYSPACE {name.lower()} WITH replication = {{\'class\': \'SimpleStrategy\', \'replication_factor\': 1}};')
         cluster.shutdown()
-        printsuccess(f"Created keyspace {name}")
+        printsuccess(f"Created keyspace {name.lower()}")
         return True
     except Exception as e:
         printwarning(f"Error creating keyspace {name}: {e}")
         cluster.shutdown()
 
 def create_table(keyspace_name, table_name, table_schema):
+    while True:
+        try:     
+            cluster = Cluster([DATABASE_SCHEDULER_HOST])
+            session = cluster.connect()
+            break
+        except Exception as e:
+            printwarning(f"Error connecting to database: {e}\nRetrying...")
+        
     try:
         cluster = Cluster([DATABASE_SCHEDULER_HOST])
         session = cluster.connect()
         session.set_keyspace(keyspace_name.lower())
-        query = f'CREATE TABLE {table_name} ({table_schema});'
+        query = f'CREATE TABLE {table_name.lower()} ({table_schema});'
         session.execute(query)
         cluster.shutdown()
         printsuccess(f"Created table {table_name}")

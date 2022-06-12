@@ -112,9 +112,16 @@ def create_topics(topic_list) -> bool:
     return success
 
 def create_keyspace(name):
-    try:     
-        cluster = Cluster([DATABASE_SCHEDULER_HOST])
-        session = cluster.connect()
+    while True:
+        try:     
+            cluster = Cluster([DATABASE_SCHEDULER_HOST])
+            session = cluster.connect()
+            break
+        except Exception as e:
+            printwarning(f"Error connecting to database: {e}\nRetrying...")
+            time.sleep(REQUEST_ERROR_WAIT_TIME)
+        
+    try:
         session.execute(f'CREATE KEYSPACE {name.lower()} WITH replication = {{\'class\': \'SimpleStrategy\', \'replication_factor\': 1}};')
         cluster.shutdown()
         printsuccess(f"Created keyspace {name.lower()}")
@@ -124,6 +131,15 @@ def create_keyspace(name):
         cluster.shutdown()
 
 def create_table(keyspace_name, table_name, table_schema):
+    while True:
+        try:     
+            cluster = Cluster([DATABASE_SCHEDULER_HOST])
+            session = cluster.connect()
+            break
+        except Exception as e:
+            printwarning(f"Error connecting to database: {e}\nRetrying...")
+            time.sleep(REQUEST_ERROR_WAIT_TIME)
+        
     try:
         cluster = Cluster([DATABASE_SCHEDULER_HOST])
         session = cluster.connect()
