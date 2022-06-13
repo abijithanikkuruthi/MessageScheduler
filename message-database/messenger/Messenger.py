@@ -114,9 +114,14 @@ class Messenger(multiprocessing.Process):
             printsuccess(f'Kafka messages sent: {message_sent}, time: {(time.time() - self.start_time)/60:.2f} minutes')
 
         def __database_scheduler_send(message_list):
-            cluster = Cluster([DATABASE_SCHEDULER_HOST])
-            session = cluster.connect()
-            session.set_keyspace(DATABASE_SCHEDULER_KEYSPACE.lower())
+            while True:
+                try:
+                    cluster = Cluster([DATABASE_SCHEDULER_HOST])
+                    session = cluster.connect()
+                    session.set_keyspace(DATABASE_SCHEDULER_KEYSPACE.lower())
+                    break
+                except Exception as e:
+                    time.sleep(0.01)
 
             message_sent = 0
             database_progress = ProgressInfo('DB Scheduler', EXPERIMENT_MESSAGE_COUNT)

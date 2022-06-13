@@ -6,6 +6,7 @@ from cassandra.cluster import Cluster
 
 from common import get_config
 import monitoring
+import messages
 
 def collect(config):
     path = config['data_path']
@@ -43,16 +44,15 @@ def collect(config):
 def analyse(config):
 
     monitoring.analyse(config)
-
-    
+    messages.analyse(config)
 
 if __name__ == '__main__':
-    # config = get_config()
+    config = get_config()
 
-    # collect(config)
+    collect(config)
 
     # print(config)
     
-    config = {'data_path': '/mnt/Media Drive/Academics/Thesis/MessageScheduler/data/2022-06-13 10-13-31', 'monitoring': {'docker': '/mnt/Media Drive/Academics/Thesis/MessageScheduler/monitoring/docker-monitor/logs', 'prometheus': '/mnt/Media Drive/Academics/Thesis/MessageScheduler/monitoring/prometheus'}, 'message-database': {'enabled': True, 'url': 'mongodb://admin:kafka@localhost:27017/', 'database': 'MESSAGES', 'table': 'MESSAGES_RECIEVED'}, 'database-scheduler': {'enabled': True, 'host': 'localhost', 'database': 'messages', 'table': 'messages_recieved'}}
+    # config = {'data_path': '/mnt/Media Drive/Academics/Thesis/MessageScheduler/data/2022-06-13 11-06-25', 'monitoring': {'docker': '/mnt/Media Drive/Academics/Thesis/MessageScheduler/monitoring/docker-monitor/logs', 'prometheus': '/mnt/Media Drive/Academics/Thesis/MessageScheduler/monitoring/prometheus'}, 'message-database': {'enabled': True, 'url': 'mongodb://admin:kafka@localhost:27017/', 'database': 'MESSAGES', 'table': 'MESSAGES_RECIEVED'}, 'database-scheduler': {'enabled': True, 'host': 'localhost', 'database': 'messages', 'table': 'messages_recieved'}}
 
     analyse(config)
