@@ -37,8 +37,9 @@ def process_stats(stats):
             elif stat=='name':
                 processed_stats['name'] = stats[stat].replace("/","")
         except Exception as e:
-            processed_stats[stat] = 'error'
+            processed_stats[stat] = 0
             printerror(f'Error processing stats: {stat} {e}')
+            return False
     return dict(sorted(processed_stats.items(), reverse=True))
 
 def save_stats(stats):
@@ -71,7 +72,7 @@ if __name__ == '__main__':
                 if container.name not in ['renderer', 'docker-monitor']:
                     stats = container.stats(stream=False, decode=None)
                     processed_stats = process_stats(stats)
-                    save_stats(processed_stats)
+                    processed_stats and save_stats(processed_stats)
 
             # Saving Job Log
             save_url_to_file(JOB_LOG_URL, JOB_LOG_FILE_PATH)

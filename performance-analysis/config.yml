@@ -13,7 +13,5 @@ message-database:
 database-scheduler:
   enabled : True
   host : localhost
-  user : root
-  password : kafka
-  database : MESSAGES
-  table : MESSAGES_RECIEVED
+  database : messages
+  table : messages_recieved
