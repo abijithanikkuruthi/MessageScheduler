@@ -8,12 +8,14 @@ def analyse(config):
     result_path = f'{path}{os.sep}result/'
     os.makedirs(result_path, exist_ok=True)
 
+    # Read data
     message_database_data_path = f'{path}{os.sep}message-database{os.sep}messages.csv'
     database_scheduler_data_path = f'{path}{os.sep}database-scheduler{os.sep}messages.csv'
 
     md_df = pd.read_csv(message_database_data_path)
     ds_df = pd.read_csv(database_scheduler_data_path)
 
+    # Clean data
     md_df = md_df.drop(columns=['_id', '__sm_exp_id', '__sm_msg_id', 'topic', '__sm_job_id'])
     ds_df = ds_df.drop(columns=['sm_msg_id', 'sm_exp_id', 'topic', 'value'])
     
@@ -28,7 +30,7 @@ def analyse(config):
     ax.set_xlabel("Message Hop Count")
     plt.savefig(f'{result_path}/kafka_messages_hopcount.pdf', bbox_inches='tight')
 
-    # Delay Computations
+    # Message Delay Computations
     md_df.time = pd.to_datetime(md_df.time)
     md_df.__sm_worker_timestamp.fillna(md_df.__sm_mh_timestamp, inplace=True)
     md_df.__sm_worker_timestamp = pd.to_datetime(md_df.__sm_worker_timestamp)
@@ -40,7 +42,7 @@ def analyse(config):
     ds_df['delay'] = (ds_df.time - ds_df.sm_recieved_time).astype('timedelta64[s]')
     ds_df['abs_delay'] = abs((ds_df.time - ds_df.sm_recieved_time).astype('timedelta64[s]'))
 
-    # Delay Histogram
+    # Message Delay Histogram
     fig, ax = plt.subplots(figsize=(25, 9))
     hist_df = pd.DataFrame()
     hist_df['Kafka'] = md_df.delay
@@ -51,7 +53,7 @@ def analyse(config):
         ax.set_ylabel("Message Count")
     fig.savefig(f'{result_path}/message_delay_comparison.pdf', bbox_inches='tight')
 
-    # Absolute Delay Histogram
+    # Message Absolute Delay Histogram
     fig, ax = plt.subplots(figsize=(25, 9))
     hist_df = pd.DataFrame()
     hist_df['Kafka'] = md_df.abs_delay
@@ -62,7 +64,7 @@ def analyse(config):
         ax.set_ylabel("Message Count")
     fig.savefig(f'{result_path}/message_abs_delay_comparison.pdf', bbox_inches='tight')
 
-    # Delay Statistics
+    # Message Delay Statistics
     md_df.delay.describe().to_csv(f'{result_path}/kafka_messages_delay.csv')
     md_df.abs_delay.describe().to_csv(f'{result_path}/kafka_messages_abs_delay.csv')
     ds_df.delay.describe().to_csv(f'{result_path}/cassandra_messages_delay.csv')

@@ -1,5 +1,9 @@
 #!/bin/bash
 
+export EXPERIMENT_DURATION_HOURS=0.08
+export EXPERIMENT_MESSAGE_COUNT=9999
+export MESSAGE_SIZE_BYTES=2
+
 # Docker cleanup script
 docker system prune -f
 docker network create kafka-network
@@ -28,5 +32,8 @@ cd ../message-database
 docker-compose up --build -d
 
 sleep 5
+
+cd ../performance-analysis
+docker-compose up --build -d
 
 watch -n 5 --color docker logs messenger

@@ -3,6 +3,9 @@
 cd monitoring
 docker-compose down
 
+cd ../performance-analysis
+docker-compose down
+
 cd ../message-database
 docker-compose down
 
