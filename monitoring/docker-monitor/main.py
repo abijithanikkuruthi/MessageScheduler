@@ -37,7 +37,7 @@ def process_stats(stats):
             elif stat=='name':
                 processed_stats['name'] = stats[stat].replace("/","")
         except Exception as e:
-            processed_stats[stat] = 'error'
+            processed_stats[stat] = 0
             printerror(f'Error processing stats: {stat} {e}')
     return dict(sorted(processed_stats.items(), reverse=True))
 

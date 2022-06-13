@@ -2,7 +2,7 @@ import os
 import shutil
 import pandas as pd
 from pymongo import MongoClient
-import mysql.connector
+from cassandra.cluster import Cluster
 
 from common import get_config
 import monitoring
@@ -31,15 +31,14 @@ def collect(config):
         database_scheduler_data_path = f'{path}{os.sep}database-scheduler/'
         os.makedirs(database_scheduler_data_path, exist_ok=True)
 
-        cnx = mysql.connector.connect(user=config['database-scheduler']['user'], 
-                                password=config['database-scheduler']['password'],
-                                host=config['database-scheduler']['host'],
-                                database=config['database-scheduler']['database'])
-        cursor = cnx.cursor()
-        cursor.execute(f"SELECT * FROM {config['database-scheduler']['table']}")
-        pd.DataFrame(cursor.fetchall()).to_csv(f'{database_scheduler_data_path}{os.sep}messages.csv')
-        cursor.close()
-        cnx.close()
+        cluster = Cluster([config['database-scheduler']['host']])
+        session = cluster.connect()
+        session.set_keyspace(config['database-scheduler']['database'].lower())
+        
+        result = session.execute(f"SELECT * FROM {config['database-scheduler']['table']}")
+        pd.DataFrame(result).to_csv(f'{database_scheduler_data_path}{os.sep}messages.csv')
+        
+        cluster.shutdown()
 
 def analyse(config):
 
@@ -48,12 +47,12 @@ def analyse(config):
     
 
 if __name__ == '__main__':
-    config = get_config()
+    # config = get_config()
 
-    collect(config)
+    # collect(config)
 
     # print(config)
     
-    # config = {'data_path': '/mnt/Media Drive/Academics/Thesis/MessageScheduler/data/2022-06-10 12-20-53', 'monitoring': {'docker': '/mnt/Media Drive/Academics/Thesis/MessageScheduler/monitoring/docker-monitor/logs', 'prometheus': '/mnt/Media Drive/Academics/Thesis/MessageScheduler/monitoring/prometheus'}, 'message-database': {'enabled': True, 'url': 'mongodb://admin:kafka@localhost:27017/', 'database': 'MESSAGES', 'table': 'MESSAGES_RECIEVED'}, 'database-scheduler': {'enabled': True, 'host': 'localhost', 'user': 'root', 'password': 'kafka', 'database': 'MESSAGES', 'table': 'MESSAGES_RECIEVED'}}
+    config = {'data_path': '/mnt/Media Drive/Academics/Thesis/MessageScheduler/data/2022-06-13 10-13-31', 'monitoring': {'docker': '/mnt/Media Drive/Academics/Thesis/MessageScheduler/monitoring/docker-monitor/logs', 'prometheus': '/mnt/Media Drive/Academics/Thesis/MessageScheduler/monitoring/prometheus'}, 'message-database': {'enabled': True, 'url': 'mongodb://admin:kafka@localhost:27017/', 'database': 'MESSAGES', 'table': 'MESSAGES_RECIEVED'}, 'database-scheduler': {'enabled': True, 'host': 'localhost', 'database': 'messages', 'table': 'messages_recieved'}}
 
     analyse(config)

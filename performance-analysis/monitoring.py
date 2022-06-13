@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+from common import printerror
 
 def __analyse_job_log(log_path, result_path):
     job_df = pd.read_csv(log_path)
@@ -52,29 +53,35 @@ def __analyse_docker_log(log_path, result_path):
 
     # Absolute Readings
     for col_name in [i for i in docker_df.columns if i not in ["time", "name", "timestamp"]]:
-        fig, ax = plt.subplots(figsize=(16, 9))
-        for label, df in docker_df.groupby('name'):
-            df.plot(x='time', y=col_name, ax=ax, label=label)
-        ax.set_ylabel(col_name)
-        ax.set_xlabel("Time (hours)")
-        plt.legend()
-        plt.savefig(f'{result_path}/docker_{col_name}.pdf', bbox_inches='tight')
+        try:
+            fig, ax = plt.subplots(figsize=(16, 9))
+            for label, df in docker_df.groupby('name'):
+                df.plot(x='time', y=col_name, ax=ax, label=label)
+            ax.set_ylabel(col_name)
+            ax.set_xlabel("Time (hours)")
+            plt.legend()
+            plt.savefig(f'{result_path}/docker_{col_name}.pdf', bbox_inches='tight')
+        except Exception as e:
+            printerror(f'Error in plotting docker monitoring data (absolute): {col_name}\n{e}')
 
 
     # Rate of change in values per second
     for col_name in [i for i in docker_df.columns if i not in ["time", "name", "timestamp"]]:
-        fig, ax = plt.subplots(figsize=(16, 9))
-        for label, df in docker_df.groupby('name'):
-            for p in plot_numbers_list:
-                df[p] = df[p].diff()
-            df = df[plot_numbers_list + ['timestamp']].groupby('timestamp').sum()/60
-            df['timestamp'] = pd.to_datetime(df.index)
-            df['time'] = (df['timestamp'] - df['timestamp'].min()).astype('timedelta64[s]')/3600
-            df.plot(x='time', y=col_name, ax=ax, label=label)
-        ax.set_ylabel(col_name + " per second")
-        ax.set_xlabel("Time (hours)")
-        plt.legend()
-        plt.savefig(f'{result_path}/docker_{col_name}_per_sec.pdf', bbox_inches='tight')
+        try:
+            fig, ax = plt.subplots(figsize=(16, 9))
+            for label, df in docker_df.groupby('name'):
+                for p in plot_numbers_list:
+                    df[p] = df[p].diff()
+                df = df[plot_numbers_list + ['timestamp']].groupby('timestamp').sum()/60
+                df['timestamp'] = pd.to_datetime(df.index)
+                df['time'] = (df['timestamp'] - df['timestamp'].min()).astype('timedelta64[s]')/3600
+                df.plot(x='time', y=col_name, ax=ax, label=label)
+            ax.set_ylabel(col_name + " per second")
+            ax.set_xlabel("Time (hours)")
+            plt.legend()
+            plt.savefig(f'{result_path}/docker_{col_name}_per_sec.pdf', bbox_inches='tight')
+        except Exception as e:
+            printerror(f'Error in plotting docker monitoring data (rate): {col_name}\n{e}')
     
 def analyse(config):
     path = config['data_path']
