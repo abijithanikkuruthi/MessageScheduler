@@ -3,14 +3,16 @@ import shutil
 import pandas as pd
 from pymongo import MongoClient
 from cassandra.cluster import Cluster
+import time
 
-from common import get_config
+from common import get_config, printinfo, printsuccess, printwarning
 import monitoring
 import messages
 
 def collect(config):
     path = config['data_path']
 
+    # Collect Docker and monitoring data
     docker_data_path = f'{path}{os.sep}docker/'
     shutil.copytree(config['monitoring']['docker'], docker_data_path)
 
@@ -41,18 +43,50 @@ def collect(config):
         
         cluster.shutdown()
 
-def analyse(config):
+def experiment_running(config):
+    def __mongo_running():
+        try:
+            message_database = MongoClient(config['message-database']['url'])[config['message-database']['database']][config['message-database']['table']]
+            return message_database.count_documents({}) < config['message-count']
+        except:
+            return True
 
+    def __cassandra_running():
+        try:
+            cluster = Cluster([config['database-scheduler']['host']])
+            session = cluster.connect()
+            session.set_keyspace(config['database-scheduler']['database'].lower())
+            result = session.execute(f"SELECT COUNT(*) FROM {config['database-scheduler']['table'].lower()}")
+            cluster.shutdown()
+            return result[0][0] < config['message-count']
+        except:
+            return True
+
+    return __mongo_running() or __cassandra_running()
+
+def analyse(config):
     monitoring.analyse(config)
     messages.analyse(config)
 
 if __name__ == '__main__':
+
     config = get_config()
 
-    collect(config)
+    printsuccess('Starting performance analysis')
+    printinfo(f'Config: {config}')
 
-    # print(config)
+    printinfo('Waiting for experiment to finish')
+
+    time.sleep(config['duration'] + 60)
+
+    while experiment_running(config):
+        printwarning(f'Experiment is running... Waiting for 1 minute...')
+        time.sleep(60)
     
-    # config = {'data_path': '/mnt/Media Drive/Academics/Thesis/MessageScheduler/data/2022-06-13 11-06-25', 'monitoring': {'docker': '/mnt/Media Drive/Academics/Thesis/MessageScheduler/monitoring/docker-monitor/logs', 'prometheus': '/mnt/Media Drive/Academics/Thesis/MessageScheduler/monitoring/prometheus'}, 'message-database': {'enabled': True, 'url': 'mongodb://admin:kafka@localhost:27017/', 'database': 'MESSAGES', 'table': 'MESSAGES_RECIEVED'}, 'database-scheduler': {'enabled': True, 'host': 'localhost', 'database': 'messages', 'table': 'messages_recieved'}}
-
+    printsuccess('Experiment is finished! Collecting data...')
+    collect(config)
+    printsuccess('Data collected! Analyzing data...')
     analyse(config)
+    printsuccess('Data analyzed!')
+    printsuccess(f'Data is stored in {config["data_path"]}')
+    printsuccess('Finished!')

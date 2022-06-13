@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  performance:
+    build: ./performance
+    container_name: performance
+    image: abianik/ms_performance
+    volumes:
+      - ./..:/app
+    environment:
+      - EXPERIMENT_DURATION_HOURS=${EXPERIMENT_DURATION_HOURS:-0.1}
+      - EXPERIMENT_MESSAGE_COUNT=${EXPERIMENT_MESSAGE_COUNT:-10000}
+
+networks:
+  default:
+    external:
+      name: kafka-network
