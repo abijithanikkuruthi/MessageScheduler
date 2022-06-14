@@ -47,7 +47,7 @@ def analyse(config):
     hist_df = pd.DataFrame()
     hist_df['Kafka'] = md_df.delay
     hist_df['Cassandra'] = ds_df.delay
-    axarr = hist_df.hist(bins=60, ax=ax, sharey=True, sharex=True, legend=False, ylabelsize=12, xlabelsize=12, figsize=(25, 9), constrained_layout=True)
+    axarr = hist_df.hist(bins=60, ax=ax, sharey=True, sharex=True, legend=False, ylabelsize=12, xlabelsize=12, figsize=(25, 9))
     for ax in axarr.flatten():
         ax.set_xlabel("Message Delivery Delay (s)")
         ax.set_ylabel("Message Count")
@@ -58,7 +58,7 @@ def analyse(config):
     hist_df = pd.DataFrame()
     hist_df['Kafka'] = md_df.abs_delay
     hist_df['Cassandra'] = ds_df.abs_delay
-    axarr = hist_df.hist(bins=60, ax=ax, sharey=True, sharex=True, legend=False, ylabelsize=12, xlabelsize=12, figsize=(25, 9), constrained_layout=True)
+    axarr = hist_df.hist(bins=60, ax=ax, sharey=True, sharex=True, legend=False, ylabelsize=12, xlabelsize=12, figsize=(25, 9))
     for ax in axarr.flatten():
         ax.set_xlabel("Absolute difference between scheduled time and delivered time (s)")
         ax.set_ylabel("Message Count")
