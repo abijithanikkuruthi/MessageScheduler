@@ -77,7 +77,8 @@ if __name__ == '__main__':
 
     printinfo('Waiting for experiment to finish')
 
-    time.sleep(config['duration'] + 60)
+    if experiment_running(config):
+        time.sleep(config['duration'])
 
     while experiment_running(config):
         printwarning(f'Experiment is running... Waiting for 1 minute...')

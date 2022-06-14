@@ -70,4 +70,42 @@ def analyse(config):
     ds_df.delay.describe().to_csv(f'{result_path}/cassandra_messages_delay.csv')
     ds_df.abs_delay.describe().to_csv(f'{result_path}/cassandra_messages_abs_delay.csv')
 
+    # Message Delay Overtime
+    plt.rcParams['font.size'] = '16'
+
+    fig, ax = plt.subplots(nrows=1, ncols=2, sharex=True, sharey=True, figsize=(25,9), constrained_layout=True)
+
+    md_df = md_df.sort_values(by='time')
+    ds_df = ds_df.sort_values(by='time')
+
+    md_df['time_group'] = ((md_df['time'] - md_df['time'].min()).astype('timedelta64[s]')/60).astype(int)
+
+    md_df['Maxiumum'] = md_df.groupby('time_group')['abs_delay'].transform('max')
+    md_df['95_Percentile'] = md_df.groupby('time_group')['abs_delay'].transform('quantile', 0.95)
+    md_df['Mean'] = md_df.groupby('time_group')['abs_delay'].transform('mean')
+
+    md_df['time_group'] = md_df['time_group']/60
+    md_df[['Maxiumum', '95_Percentile', 'Mean', 'time_group']].plot(x='time_group', ax=ax[0], label='Message Database')
+    ax[0].fill_between(md_df['time_group'], md_df['Maxiumum'], md_df['Mean'], color='#D3F8D3', alpha=0.9, interpolate=True)
+    ax[0].fill_between(md_df['time_group'], md_df['Maxiumum'], 60, color='#ff0000', alpha=0.3, interpolate=True, where=(md_df['Maxiumum'] > 60))
+    ax[0].title.set_text('Kafka')
+    ax[0].set_xlabel('Time (hours)')
+    ax[0].set_ylabel('Message Delay (s)')
+
+    ds_df['time_group'] = ((ds_df['time'] - ds_df['time'].min()).astype('timedelta64[s]')/60).astype(int)
+
+    ds_df['Maxiumum'] = ds_df.groupby('time_group')['abs_delay'].transform('max')
+    ds_df['95_Percentile'] = ds_df.groupby('time_group')['abs_delay'].transform('quantile', 0.95)
+    ds_df['Mean'] = ds_df.groupby('time_group')['abs_delay'].transform('mean')
+
+    ds_df['time_group'] = ds_df['time_group']/60
+    ds_df[['Maxiumum', '95_Percentile', 'Mean', 'time_group']].plot(x='time_group', ax=ax[1], label='Database Scheduler')
+    ax[1].fill_between(ds_df['time_group'], ds_df['Maxiumum'], ds_df['Mean'], color='#D3F8D3', alpha=0.9, interpolate=True)
+    ax[1].fill_between(ds_df['time_group'], ds_df['Maxiumum'], 60, color='#ff0000', alpha=0.3, interpolate=True, where=(ds_df['Maxiumum'] > 60))
+    ax[1].title.set_text('Cassandra')
+    ax[1].set_xlabel('Time (hours)')
+    ax[1].set_ylabel('Message Delay (s)')
+
+    fig.savefig(f'{result_path}/message_delay_overtime.pdf', bbox_inches='tight')
+
     plt.close('all')

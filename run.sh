@@ -1,8 +1,8 @@
 #!/bin/bash
 
-export EXPERIMENT_DURATION_HOURS=0.08
-export EXPERIMENT_MESSAGE_COUNT=9999
-export MESSAGE_SIZE_BYTES=2
+export EXPERIMENT_DURATION_HOURS=0.1
+export EXPERIMENT_MESSAGE_COUNT=10000
+export MESSAGE_SIZE_BYTES=10
 
 # Docker cleanup script
 docker system prune -f

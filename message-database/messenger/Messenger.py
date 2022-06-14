@@ -146,6 +146,10 @@ class Messenger(multiprocessing.Process):
             printsuccess(f'DB Scheduler messages sent: {message_sent}, time: {(time.time() - self.start_time)/60:.2f} minutes')
 
         def __message_database_send(message_list):
+            # This function was written to make sure no messages are being lost by Kafka or Cassandra.
+            # Multiple experiment run showed there was no data loss.
+            # So currently disabling this function.
+            return
             message_database = MongoClient(MESSAGE_DATABASE_URL)[KAFKA_MESSAGE_TOPIC][KAFKA_MESSAGE_TOPIC]
 
             message_sent = 0
