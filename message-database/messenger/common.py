@@ -143,9 +143,7 @@ def create_table(keyspace_name, table_name, table_schema):
         session.set_keyspace(keyspace_name.lower())
         query = f'CREATE TABLE {table_name.lower()} ({table_schema});'
         session.execute(query)
-        cluster.shutdown()
         printsuccess(f"Created table {table_name}")
-        return True
     except Exception as e:
         printwarning(f"Error creating table {table_name}: {e}")
     finally:
