@@ -3,98 +3,145 @@ import shutil
 import pandas as pd
 from pymongo import MongoClient
 from cassandra.cluster import Cluster
+import mysql.connector
 import time
 
-from common import get_config, printinfo, printsuccess, printwarning
-import monitoring
-import messages
+from common import get_config, printinfo, printsuccess, printwarning, printerror
+import ServiceAnalyser
+import MessageAnalyser
 from constants import *
 
 def collect(config):
     path = config['data_path']
 
-    # Collect Docker and monitoring data
+    # Collect monitoring data from docker containers
     try:
-        docker_data_path = f'{path}{os.sep}docker/'
+        docker_data_path = f'{path}{os.sep}docker{os.sep}'
         shutil.copytree(config['monitoring']['docker'], docker_data_path)
     except:
         printwarning('Could not collect Docker data')
-    try:
-        prometheus_data_path = f'{path}{os.sep}prometheus/'
-        shutil.copytree(config['monitoring']['prometheus'], prometheus_data_path)
-    except:
-        printwarning('Could not collect Prometheus data')
         
-    # Message Database Data
-    if config['message-database']['enabled']:
-        message_database_data_path = f'{path}{os.sep}message-database/'
-        os.makedirs(message_database_data_path, exist_ok=True)
+    # Collect kafka monitoring data and messages
+    if KAFKA_ENABLED:
+        try:
+            prometheus_data_path = f'{path}{os.sep}prometheus{os.sep}'
+            shutil.copytree(config['monitoring']['prometheus'], prometheus_data_path)
+        except:
+            printwarning('Could not collect Prometheus data')
+        
+        kafka_data_path = f'{path}{os.sep}kafka{os.sep}'
+        os.makedirs(kafka_data_path, exist_ok=True)
 
-        message_database = MongoClient(config['message-database']['url'])[config['message-database']['database']][config['message-database']['table']]
+        message_database = MongoClient(MESSENGER_DATABASE_URL)[MESSENGER_DATABASE_NAME][MESSENGER_DATABASE_TABLE]
         message_database_data = message_database.find()
-        pd.DataFrame(message_database_data).to_csv(f'{message_database_data_path}{os.sep}messages.csv')
+        pd.DataFrame(message_database_data).to_csv(f'{kafka_data_path}{os.sep}messages.csv')
 
     
-    # Database Scheduler Data
-    if config['database-scheduler']['enabled']:
-        database_scheduler_data_path = f'{path}{os.sep}database-scheduler/'
-        os.makedirs(database_scheduler_data_path, exist_ok=True)
+    # Collect Cassandra Data
+    if DATABASE_SCHEDULER_CASSANDRA_ENABLED:
+        cassandra_data_path = f'{path}{os.sep}cassandra{os.sep}'
+        os.makedirs(cassandra_data_path, exist_ok=True)
 
-        cluster = Cluster([config['database-scheduler']['host']])
+        cluster = Cluster([DATABASE_SCHEDULER_CASSANDRA_HOST])
         session = cluster.connect()
-        session.set_keyspace(config['database-scheduler']['database'].lower())
+        session.set_keyspace(DATABASE_SCHEDULER_DATABASE)
         
-        result = session.execute(f"SELECT * FROM {config['database-scheduler']['table']}")
-        pd.DataFrame(result).to_csv(f'{database_scheduler_data_path}{os.sep}messages.csv')
+        result = session.execute(f"SELECT * FROM {DATABASE_SCHEDULER_RECIPIENT_TABLE}")
+        pd.DataFrame(result).to_csv(f'{cassandra_data_path}{os.sep}messages.csv')
         
         cluster.shutdown()
+    
+    # Collect MySQL Data
+    if DATABASE_SCHEDULER_MYSQL_ENABLED:
+        mysql_data_path = f'{path}{os.sep}mysql{os.sep}'
+        os.makedirs(mysql_data_path, exist_ok=True)
 
-def experiment_running(config):
+        connection = mysql.connector.connect(user=DATABASE_SCHEDULER_MYSQL_USER,
+                                                password=DATABASE_SCHEDULER_MYSQL_PASSWORD,
+                                                host=DATABASE_SCHEDULER_MYSQL_HOST,
+                                                database=DATABASE_SCHEDULER_DATABASE)
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT * FROM {DATABASE_SCHEDULER_RECIPIENT_TABLE}")
+        pd.DataFrame(cursor.fetchall()).to_csv(f'{mysql_data_path}{os.sep}messages.csv')
+        connection.close()
+
+
+def experiment_running(print_log=False):
     def __mongo_running():
-        if MESSAGE_DATABASE_ENABLED:
+        if KAFKA_ENABLED:
             try:
-                message_database = MongoClient(config['message-database']['url'])[config['message-database']['database']][config['message-database']['table']]
-                return message_database.count_documents({}) < config['message-count']
+                message_database = MongoClient(MESSENGER_DATABASE_URL)[MESSENGER_DATABASE_NAME][MESSENGER_DATABASE_TABLE]
+                msg_count = message_database.count_documents({})
+                running = msg_count < EXPERIMENT_MESSAGE_COUNT
+                print_log and running and printwarning(f'Kafka is missing {EXPERIMENT_MESSAGE_COUNT - msg_count} messages')
+                (not running) and printsuccess('Kafka has finished')
+                return running
             except:
                 return True
         return False
 
     def __cassandra_running():
-        if DATABASE_SCHEDULER_ENABLED:
+        if DATABASE_SCHEDULER_CASSANDRA_ENABLED:
             try:
-                cluster = Cluster([config['database-scheduler']['host']])
+                cluster = Cluster([DATABASE_SCHEDULER_CASSANDRA_HOST])
                 session = cluster.connect()
-                session.set_keyspace(config['database-scheduler']['database'].lower())
-                result = session.execute(f"SELECT COUNT(*) FROM {config['database-scheduler']['table'].lower()}")
+                session.set_keyspace(DATABASE_SCHEDULER_DATABASE)
+                result = session.execute(f"SELECT COUNT(*) FROM {DATABASE_SCHEDULER_RECIPIENT_TABLE}")
                 cluster.shutdown()
-                return result[0][0] < config['message-count']
+                running = result.one()[0] < EXPERIMENT_MESSAGE_COUNT
+                print_log and running and printwarning(f'Cassandra is missing {EXPERIMENT_MESSAGE_COUNT - result.one()[0]} messages')
+                (not running) and printsuccess('Cassandra has finished')
+                return running
             except:
                 return True
         return False
-        
-    return __mongo_running() or __cassandra_running()
+    
+    def __mysql_running():
+        if DATABASE_SCHEDULER_MYSQL_ENABLED:
+            try:
+                connection = mysql.connector.connect(user=DATABASE_SCHEDULER_MYSQL_USER, 
+                                password=DATABASE_SCHEDULER_MYSQL_PASSWORD,
+                              host=DATABASE_SCHEDULER_MYSQL_HOST,
+                              database=DATABASE_SCHEDULER_DATABASE)
+                cursor = connection.cursor()
+                cursor.execute(f"SELECT COUNT(*) FROM {DATABASE_SCHEDULER_RECIPIENT_TABLE}")
+                result = cursor.fetchone()
+                connection.close()
+                running = result[0] < EXPERIMENT_MESSAGE_COUNT
+                print_log and running and printwarning(f'MySQL is missing {EXPERIMENT_MESSAGE_COUNT - result[0]} messages')
+                (not running) and printsuccess('MySQL has finished')
+                return running
+            except:
+                return True
+        return False
+    mongo_running = __mongo_running()
+    cassandra_running = __cassandra_running()
+    mysql_running = __mysql_running()
+    return mongo_running or cassandra_running or mysql_running
 
 def analyse(config):
-    monitoring.analyse(config)
-    messages.analyse(config)
+    ServiceAnalyser.analyse(config)
+    MessageAnalyser.analyse(config)
 
 if __name__ == '__main__':
 
     config = get_config()
 
-    printsuccess('Starting performance analysis')
-    printinfo(f'Config: {config}')
-
+    printsuccess('Starting performance analysis service')
     printinfo('Waiting for experiment to finish')
 
-    if experiment_running(config):
-        time.sleep(config['duration'])
+    experiment_running() and time.sleep(EXPERIMENT_DURATION_HOURS * 60 * 60)
 
-    while experiment_running(config):
+    retries = 0
+    while experiment_running(print_log=True):
         printwarning(f'Experiment is running... Waiting for 1 minute...')
         time.sleep(60)
+        retries += 1
+        if retries > 10:
+            printerror('Experiment is still running after 10 minutes')
+            break
     
-    printsuccess('Experiment is finished! Collecting data...')
+    printsuccess('Collecting data...')
     collect(config)
     printsuccess('Data collected! Analyzing data...')
     analyse(config)

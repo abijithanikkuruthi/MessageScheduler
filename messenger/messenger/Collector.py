@@ -4,6 +4,7 @@ from confluent_kafka import Consumer
 from common import getTime, id_generator, printinfo, printsuccess, printerror, random_data
 import threading
 from pymongo import MongoClient
+import time
 
 class CollectorProcess(multiprocessing.Process):
     def __init__(self):
@@ -13,7 +14,7 @@ class CollectorProcess(multiprocessing.Process):
 
         while True:
             try:
-                message_database = MongoClient(MESSAGE_DATABASE_URL)[KAFKA_MESSAGE_TOPIC][MESSAGE_DATABASE_TABLE] if MESSAGE_DATABASE_ENABLED else None
+                message_database = MongoClient(MESSENGER_DATABASE_URL)[KAFKA_MESSAGE_TOPIC][MESSENGER_DATABASE_TABLE] if MESSENGER_DATABASE_ENABLED else None
                 consumer = Consumer({
                     'bootstrap.servers':    KAFKA_SERVER,
                     'group.id':             KAFKA_MESSAGE_GROUP_ID,
@@ -28,6 +29,16 @@ class CollectorProcess(multiprocessing.Process):
                     
                     if message is None or message.error():
                         message and message.error() and printerror(f'{message.error()}')
+                        # Close the consumer for a while, then reopen it if no messages are received for a while
+                        consumer.close()
+                        time.sleep(COLLECTOR_CONSUMER_FREQ)
+                        consumer = Consumer({
+                            'bootstrap.servers':    KAFKA_SERVER,
+                            'group.id':             KAFKA_MESSAGE_GROUP_ID,
+                            'enable.auto.commit':   True,
+                            'auto.offset.reset':    'earliest',
+                        })
+                        consumer.subscribe([KAFKA_MESSAGE_TOPIC])
                     else:
                         message_count += 1
                         message_database.insert_one({ i[0]:i[1].decode() for i in message.headers()})
@@ -46,7 +57,7 @@ class Collector(multiprocessing.Process):
         multiprocessing.Process.__init__(self)
     
     def run(self):
-        if MESSAGE_DATABASE_ENABLED:
+        if MESSENGER_DATABASE_ENABLED and KAFKA_ENABLED:
             for _ in range(COLLECTOR_PROCESS_COUNT):
                 CollectorProcess().start()
             printsuccess(f'Collector started in {COLLECTOR_PROCESS_COUNT} processes')

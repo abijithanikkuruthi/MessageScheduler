@@ -1,6 +1,6 @@
 import time
 import os
-import yaml
+from constants import *
 
 class colors:
     HEADER = '\033[95m'
@@ -49,23 +49,6 @@ def get_config():
     config['monitoring'] = {}
     config['monitoring']['docker'] = get_absolute_path('../../monitoring/docker-monitor/logs')
     config['monitoring']['prometheus'] = get_absolute_path('../../monitoring/prometheus')
-
-    config['message-database'] = {
-        'enabled': True,
-        'url': 'mongodb://admin:kafka@mongo:27017/',
-        'database': 'MESSAGES',
-        'table': 'MESSAGES_RECIEVED'
-    }
-
-    config['database-scheduler'] = {
-        'enabled': True,
-        'host': 'cassandra',
-        'database': 'messages',
-        'table': 'messages_recieved'
-    }
-
-    config['duration'] = float(os.getenv('EXPERIMENT_DURATION_HOURS', '0.1')) * 3600
-    config['message-count'] = int(os.getenv('EXPERIMENT_MESSAGE_COUNT', '10000'))
 
     return config
 
