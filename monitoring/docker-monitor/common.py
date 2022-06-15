@@ -1,9 +1,8 @@
-from constants import DEBUG, REQUEST_ERROR_WAIT_TIME, SCHEDULER_SERVER_URL, REQUEST_COUNT_LIMIT
+from constants import *
 import requests
 import time
 import random
 import string
-import uuid
 
 CACHE = {}
 
@@ -17,37 +16,6 @@ class colors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
-
-class Config:
-    CONFIG = {}
-    CONFIG_URL = SCHEDULER_SERVER_URL + '/config'
-
-    def __init__(self):
-        if not Config.CONFIG:
-            Config.update()
-        return Config.CONFIG
-    
-    @classmethod
-    def update(cls):
-        while True:
-            try:
-                cls.CONFIG = get_json_from_url(cls.CONFIG_URL)
-                printdebug(f'Config updated from {cls.CONFIG_URL}')
-                cls.CONFIG['last_update'] = getTime()
-                cls.CONFIG['bucket_object_list'] = sorted(cls.CONFIG['bucket_object_list'], key=lambda k: k['lower'])
-                printdebug(f'Config: {cls.CONFIG}')
-                break
-            except Exception as e:
-                printerror(f'Failed to get config from {Config.CONFIG_URL}: {e}')
-                time.sleep(REQUEST_ERROR_WAIT_TIME)
-    
-    @classmethod
-    def get(cls, key=None):
-        if not cls.CONFIG:
-            cls.update()
-        if key:
-            return cls.CONFIG[key]
-        return cls.CONFIG
 
 def getTime(fmt="%Y-%m-%d %H:%M:%S"):
     return time.strftime(fmt)
@@ -120,4 +88,4 @@ def save_url_to_file(url, filename):
         f.write(response.content)
 
 if __name__=="__main__":
-    print(Config.get())
+    pass

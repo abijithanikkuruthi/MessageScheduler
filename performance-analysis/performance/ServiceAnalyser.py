@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 from common import printerror
+from constants import *
 
 def __analyse_job_log(log_path, result_path):
     job_df = pd.read_csv(log_path)
@@ -15,16 +16,16 @@ def __analyse_job_log(log_path, result_path):
     job_df['name'] = job_df['name'].str.replace('__SM_', '')
     job_df['creation_time'] = (job_df['creation_time'] - job_df['creation_time'].min()).astype('timedelta64[s]')/3600
 
-    # JOB EXECUTION TIME FIGURE
+    # JOB EXECUTION TIME GRAPH
     fig, ax = plt.subplots(figsize=(16, 9))
     for label, df in job_df.groupby('name'):
         df.plot(x='creation_time', y='duration',ax=ax, label=label)
     ax.set_ylabel("Execution Time (s)")
     ax.set_xlabel("Time (hours)")
     plt.legend()
-    plt.savefig(f'{result_path}{os.sep}job_exec_time.pdf', bbox_inches='tight')
+    plt.savefig(f'{result_path}{os.sep}kafka_scheduler_job_exec_time.pdf', bbox_inches='tight')
 
-    # JOB EXECUTION TIME TABLE
+    # JOB EXECUTION TIME STATS
     job_trim_df = job_df[['name', 'duration']]
     stats = job_trim_df.describe()
     stats.columns = ["Overall"]
@@ -34,7 +35,7 @@ def __analyse_job_log(log_path, result_path):
         b_stats.rename(columns={'duration': i}, inplace=True)
         stats = pd.concat([stats, b_stats], axis=1)
     stats = stats.round(decimals=3).transpose()
-    stats.to_csv(f'{result_path}{os.sep}job_exec_time_stats.csv')
+    stats.to_csv(f'{result_path}{os.sep}kafka_scheduler_job_exec_time_stats.csv')
 
 def __analyse_docker_log(log_path, result_path):
     docker_df = pd.read_csv(log_path)
@@ -45,7 +46,7 @@ def __analyse_docker_log(log_path, result_path):
     docker_df['time'] = pd.to_datetime(docker_df['time'])
     docker_df['timestamp'] = docker_df['time'].dt.strftime('%Y-%m-%d %H:%M')
     docker_df['time'] = (docker_df['time'] - docker_df['time'].min()).astype('timedelta64[s]')/3600
-    docker_df = docker_df[docker_df['name'].isin(['database-scheduler', 'cassandra', 'messagehandler', 'worker', 'scheduler', 'kafka'])]
+    docker_df = docker_df[docker_df['name'].isin(['database-scheduler', 'cassandra', 'mysql','messagehandler', 'worker', 'scheduler', 'kafka'])]
 
     plot_numbers_list = ['pids', 'net_tx (MB)', 'net_rx (MB)',
         'memory_usage (MB)', 'cpu_user (s)', 'cpu_system (s)',
@@ -86,14 +87,14 @@ def __analyse_docker_log(log_path, result_path):
 def analyse(config):
     path = config['data_path']
 
-    result_path = f'{path}{os.sep}result/'
+    result_path = f'{path}{os.sep}result{os.sep}'
     os.makedirs(result_path, exist_ok=True)
 
-    docker_data_path = f'{path}{os.sep}docker/'
+    docker_data_path = f'{path}{os.sep}docker{os.sep}'
 
-    job_log_path = f'{docker_data_path}{os.sep}job.log'
-    docker_log_path = f'{docker_data_path}{os.sep}docker-monitor.log'
+    kafka_job_log_path = f'{docker_data_path}{os.sep}{KAFKA_SCHEDULER_JOB_LOG_FILE}'
+    docker_log_path = f'{docker_data_path}{os.sep}{DOCKER_MONITOR_LOG_FILE}'
 
-    __analyse_job_log(job_log_path, result_path)
+    KAFKA_ENABLED and __analyse_job_log(kafka_job_log_path, result_path)
     __analyse_docker_log(docker_log_path, result_path)
     plt.close('all')

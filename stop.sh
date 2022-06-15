@@ -6,7 +6,7 @@ docker-compose down
 cd ../performance-analysis
 docker-compose down
 
-cd ../message-database
+cd ../messenger
 docker-compose down
 
 cd ../database-scheduler

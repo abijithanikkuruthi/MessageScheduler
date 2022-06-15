@@ -1,17 +1,17 @@
-from common import Config, getTime, printdebug, printsuccess, printerror, printheader, save_url_to_file, excpetion_info
-from constants import CONFIG_FILE, DOCKER_MONITOR_LOG_FILE, JOB_LOG_FILE, LOGS_FOLDER, SCHEDULER_SERVER_URL, REQUEST_ERROR_WAIT_TIME, MONITOR_INTERVAL
+from common import getTime, printdebug, printsuccess, printerror, printheader, save_url_to_file, excpetion_info
+from constants import *
 import os
 import time
 import docker
 
 WORKING_FOLDER = f'{LOGS_FOLDER}'
 
-CONFIG_FILE_PATH = f'{WORKING_FOLDER}{os.sep}{CONFIG_FILE}'
-
 DOCKER_MONITOR_LOG_FILE_PATH = f'{WORKING_FOLDER}{os.sep}{DOCKER_MONITOR_LOG_FILE}'
 
-JOB_LOG_FILE_PATH = f'{WORKING_FOLDER}{os.sep}{JOB_LOG_FILE}'
-JOB_LOG_URL = f'{SCHEDULER_SERVER_URL}/api/job_log'
+KAFKA_SCHEDULER_CONFIG_URL = f'{KAFKA_SCHEDULER_SERVER_URL}/config'
+KAFKA_SCHEDULER_CONFIG_FILE_PATH = f'{WORKING_FOLDER}{os.sep}{KAFKA_SCHEDULER_CONFIG_FILE}'
+KAFKA_SCHEDULER_JOB_LOG_URL = f'{KAFKA_SCHEDULER_SERVER_URL}/api/job_log'
+KAFKA_SCHEDULER_JOB_LOG_FILE_PATH = f'{WORKING_FOLDER}{os.sep}{KAFKA_SCHEDULER_JOB_LOG_FILE}'
 
 def process_stats(stats):
     processed_stats = {}
@@ -57,30 +57,31 @@ def save_stats(stats):
     
 if __name__ == '__main__':
     
-    printheader(f'Starting docker-monitor in folder: {WORKING_FOLDER}')
+    printsuccess(f'Starting docker monitor service')
 
     os.makedirs(WORKING_FOLDER, exist_ok=True)
     
-    # Saving Job Configuration
-    save_url_to_file(Config.CONFIG_URL, CONFIG_FILE_PATH)
+    # Saving Kafka Job Configuration
+    KAFKA_ENABLED and save_url_to_file(KAFKA_SCHEDULER_CONFIG_URL, KAFKA_SCHEDULER_CONFIG_FILE_PATH)
+    client = docker.DockerClient(base_url='unix:///var/run/docker.sock')
 
     while True:
+        start_time = time.time()
         try:
-            # Saving Docker Monitor Log
-            client = docker.DockerClient(base_url='unix:///var/run/docker.sock')
+            # Saving Docker Monitor Log for each container
             for container in client.containers.list():
                 if container.name not in ['renderer', 'docker-monitor']:
                     stats = container.stats(stream=False, decode=None)
                     processed_stats = process_stats(stats)
                     processed_stats and save_stats(processed_stats)
 
-            # Saving Job Log
-            save_url_to_file(JOB_LOG_URL, JOB_LOG_FILE_PATH)
+            # Saving Kafka Scheduler Job Log
+            KAFKA_ENABLED and save_url_to_file(KAFKA_SCHEDULER_JOB_LOG_URL, KAFKA_SCHEDULER_JOB_LOG_FILE_PATH)
 
         except Exception as e:
             printerror(f'main(): {e}')
-            excpetion_info()
-            time.sleep(REQUEST_ERROR_WAIT_TIME)
+            time.sleep(1)
             continue
-
-        time.sleep(MONITOR_INTERVAL)
+        
+        end_time = time.time()
+        time.sleep(max(0, DOCKER_MONITOR_INTERVAL - (end_time - start_time)))
