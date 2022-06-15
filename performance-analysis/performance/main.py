@@ -10,6 +10,7 @@ from common import get_config, printinfo, printsuccess, printwarning, printerror
 import ServiceAnalyser
 import MessageAnalyser
 from constants import *
+import constants
 
 def collect(config):
     path = config['data_path']
@@ -32,39 +33,53 @@ def collect(config):
         kafka_data_path = f'{path}{os.sep}kafka{os.sep}'
         os.makedirs(kafka_data_path, exist_ok=True)
 
-        message_database = MongoClient(MESSENGER_DATABASE_URL)[MESSENGER_DATABASE_NAME][MESSENGER_DATABASE_TABLE]
-        message_database_data = message_database.find()
-        pd.DataFrame(message_database_data).to_csv(f'{kafka_data_path}{os.sep}messages.csv')
-
+        try:
+            printinfo('Collecting Kafka data')
+            message_database = MongoClient(MESSENGER_DATABASE_URL)[MESSENGER_DATABASE_NAME][MESSENGER_DATABASE_TABLE]
+            message_database_data = message_database.find()
+            pd.DataFrame(message_database_data).to_csv(f'{kafka_data_path}{os.sep}messages.csv')
+        except Exception as e:
+            printwarning('Could not collect Kafka data : ' + str(e))
+            constants.KAFKA_ENABLED = False
     
     # Collect Cassandra Data
     if DATABASE_SCHEDULER_CASSANDRA_ENABLED:
-        cassandra_data_path = f'{path}{os.sep}cassandra{os.sep}'
-        os.makedirs(cassandra_data_path, exist_ok=True)
+        try:
+            printinfo('Collecting Cassandra data')
+            cassandra_data_path = f'{path}{os.sep}cassandra{os.sep}'
+            os.makedirs(cassandra_data_path, exist_ok=True)
 
-        cluster = Cluster([DATABASE_SCHEDULER_CASSANDRA_HOST])
-        session = cluster.connect()
-        session.set_keyspace(DATABASE_SCHEDULER_DATABASE)
-        
-        result = session.execute(f"SELECT * FROM {DATABASE_SCHEDULER_RECIPIENT_TABLE}")
-        pd.DataFrame(result).to_csv(f'{cassandra_data_path}{os.sep}messages.csv')
-        
-        cluster.shutdown()
+            cluster = Cluster([DATABASE_SCHEDULER_CASSANDRA_HOST])
+            session = cluster.connect()
+            session.set_keyspace(DATABASE_SCHEDULER_DATABASE)
+            
+            result = session.execute(f"SELECT * FROM {DATABASE_SCHEDULER_RECIPIENT_TABLE}")
+            pd.DataFrame(result).to_csv(f'{cassandra_data_path}{os.sep}messages.csv')
+            
+            cluster.shutdown()
+        except Exception as e:
+            printerror('Could not collect Cassandra data : ' + str(e))
+            constants.DATABASE_SCHEDULER_CASSANDRA_ENABLED = False
+
     
     # Collect MySQL Data
     if DATABASE_SCHEDULER_MYSQL_ENABLED:
-        mysql_data_path = f'{path}{os.sep}mysql{os.sep}'
-        os.makedirs(mysql_data_path, exist_ok=True)
+        try:
+            printinfo('Collecting MySQL data')
+            mysql_data_path = f'{path}{os.sep}mysql{os.sep}'
+            os.makedirs(mysql_data_path, exist_ok=True)
 
-        connection = mysql.connector.connect(user=DATABASE_SCHEDULER_MYSQL_USER,
-                                                password=DATABASE_SCHEDULER_MYSQL_PASSWORD,
-                                                host=DATABASE_SCHEDULER_MYSQL_HOST,
-                                                database=DATABASE_SCHEDULER_DATABASE)
-        cursor = connection.cursor()
-        cursor.execute(f"SELECT * FROM {DATABASE_SCHEDULER_RECIPIENT_TABLE}")
-        pd.DataFrame(cursor.fetchall()).to_csv(f'{mysql_data_path}{os.sep}messages.csv')
-        connection.close()
-
+            connection = mysql.connector.connect(user=DATABASE_SCHEDULER_MYSQL_USER,
+                                                    password=DATABASE_SCHEDULER_MYSQL_PASSWORD,
+                                                    host=DATABASE_SCHEDULER_MYSQL_HOST,
+                                                    database=DATABASE_SCHEDULER_DATABASE)
+            cursor = connection.cursor()
+            cursor.execute(f"SELECT * FROM {DATABASE_SCHEDULER_RECIPIENT_TABLE}")
+            pd.DataFrame(cursor.fetchall()).to_csv(f'{mysql_data_path}{os.sep}messages.csv')
+            connection.close()
+        except Exception as e:
+            printerror('Could not collect MySQL data : ' + str(e))
+            constants.DATABASE_SCHEDULER_MYSQL_ENABLED = False
 
 def experiment_running(print_log=False):
     def __mongo_running():
@@ -76,7 +91,8 @@ def experiment_running(print_log=False):
                 print_log and running and printwarning(f'Kafka is missing {EXPERIMENT_MESSAGE_COUNT - msg_count} messages')
                 (not running) and printsuccess('Kafka has finished')
                 return running
-            except:
+            except Exception as e:
+                printerror('Could not connect to MongoDB : ' + str(e))
                 return True
         return False
 
@@ -92,7 +108,8 @@ def experiment_running(print_log=False):
                 print_log and running and printwarning(f'Cassandra is missing {EXPERIMENT_MESSAGE_COUNT - result.one()[0]} messages')
                 (not running) and printsuccess('Cassandra has finished')
                 return running
-            except:
+            except Exception as e:
+                printerror('Could not connect to Cassandra : ' + str(e))
                 return True
         return False
     
@@ -111,7 +128,8 @@ def experiment_running(print_log=False):
                 print_log and running and printwarning(f'MySQL is missing {EXPERIMENT_MESSAGE_COUNT - result[0]} messages')
                 (not running) and printsuccess('MySQL has finished')
                 return running
-            except:
+            except Exception as e:
+                printerror('Could not connect to MySQL : ' + str(e))
                 return True
         return False
     mongo_running = __mongo_running()
@@ -138,7 +156,7 @@ if __name__ == '__main__':
         time.sleep(60)
         retries += 1
         if retries > 10:
-            printerror('Experiment is still running after 10 minutes')
+            printerror(f'Experiment is still running after {retries} minutes')
             break
     
     printsuccess('Collecting data...')

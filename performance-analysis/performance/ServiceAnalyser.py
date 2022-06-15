@@ -1,10 +1,13 @@
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
-from common import printerror
+from common import printerror, printinfo
 from constants import *
 
 def __analyse_job_log(log_path, result_path):
+
+    printinfo(f'Analysing job log file: {log_path}')
+
     job_df = pd.read_csv(log_path)
     job_df.columns = [i.strip() for i in job_df.columns]
 
@@ -38,6 +41,9 @@ def __analyse_job_log(log_path, result_path):
     stats.to_csv(f'{result_path}{os.sep}kafka_scheduler_job_exec_time_stats.csv')
 
 def __analyse_docker_log(log_path, result_path):
+
+    printinfo(f'Analysing docker log file: {log_path}')
+    
     docker_df = pd.read_csv(log_path)
 
     docker_df.columns = [i.strip() for i in docker_df.columns]

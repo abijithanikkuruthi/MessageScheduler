@@ -2,8 +2,12 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 from constants import *
+from common import printinfo
 
 def __analyse_kafka(data_path, result_path):
+
+    printinfo(f'Analysing Kafka data')
+
     data = pd.read_csv(data_path)
 
     prefix = 'kafka_'
@@ -27,8 +31,8 @@ def __analyse_kafka(data_path, result_path):
     data.time = pd.to_datetime(data.time)
     data.__sm_worker_timestamp.fillna(data.__sm_mh_timestamp, inplace=True)
     data.__sm_worker_timestamp = pd.to_datetime(data.__sm_worker_timestamp)
-    data['delay'] = (data.time - data.__sm_worker_timestamp).astype('timedelta64[s]')
-    data['abs_delay'] = abs((data.time - data.__sm_worker_timestamp).astype('timedelta64[s]'))
+    data['delay'] = (data.time - data.__sm_worker_timestamp).astype('timedelta64[s]').astype(int)
+    data['abs_delay'] = abs((data.time - data.__sm_worker_timestamp).astype('timedelta64[s]')).astype(int)
 
     # Message Delay Histogram
     fig, ax = plt.subplots(figsize=(16, 9))
@@ -77,6 +81,9 @@ def __analyse_kafka(data_path, result_path):
 
 
 def __analyse_cassandra(data_path, result_path):
+
+    printinfo(f'Analysing Cassandra data')
+
     data = pd.read_csv(data_path)
 
     prefix = 'cassandra_'
@@ -136,6 +143,9 @@ def __analyse_cassandra(data_path, result_path):
     plt.savefig(f'{result_path}{os.sep}{prefix}messages_delay_over_time.pdf', bbox_inches='tight')
 
 def __analyse_mysql(data_path, result_path):
+
+    printinfo(f'Analysing MySQL data')
+
     data = pd.read_csv(data_path)
 
     prefix = 'mysql_'
