@@ -14,7 +14,7 @@ services:
       - MESSAGE_DATABASE_URL=mongodb://admin:kafka@mongo:27017/
       - DATABASE_SCHEDULER_HOST=cassandra
       - MESSAGE_DATABASE_ENABLED=True
-      - DATABASE_SCHEDULER_ENABLED=True
+      - DATABASE_SCHEDULER_ENABLED=${DATABASE_SCHEDULER_ENABLED:-True}
     depends_on:
       - mongo
 

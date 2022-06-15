@@ -8,17 +8,23 @@ import time
 from common import get_config, printinfo, printsuccess, printwarning
 import monitoring
 import messages
+from constants import *
 
 def collect(config):
     path = config['data_path']
 
     # Collect Docker and monitoring data
-    docker_data_path = f'{path}{os.sep}docker/'
-    shutil.copytree(config['monitoring']['docker'], docker_data_path)
-
-    prometheus_data_path = f'{path}{os.sep}prometheus/'
-    shutil.copytree(config['monitoring']['prometheus'], prometheus_data_path)
-
+    try:
+        docker_data_path = f'{path}{os.sep}docker/'
+        shutil.copytree(config['monitoring']['docker'], docker_data_path)
+    except:
+        printwarning('Could not collect Docker data')
+    try:
+        prometheus_data_path = f'{path}{os.sep}prometheus/'
+        shutil.copytree(config['monitoring']['prometheus'], prometheus_data_path)
+    except:
+        printwarning('Could not collect Prometheus data')
+        
     # Message Database Data
     if config['message-database']['enabled']:
         message_database_data_path = f'{path}{os.sep}message-database/'
@@ -45,23 +51,27 @@ def collect(config):
 
 def experiment_running(config):
     def __mongo_running():
-        try:
-            message_database = MongoClient(config['message-database']['url'])[config['message-database']['database']][config['message-database']['table']]
-            return message_database.count_documents({}) < config['message-count']
-        except:
-            return True
+        if MESSAGE_DATABASE_ENABLED:
+            try:
+                message_database = MongoClient(config['message-database']['url'])[config['message-database']['database']][config['message-database']['table']]
+                return message_database.count_documents({}) < config['message-count']
+            except:
+                return True
+        return False
 
     def __cassandra_running():
-        try:
-            cluster = Cluster([config['database-scheduler']['host']])
-            session = cluster.connect()
-            session.set_keyspace(config['database-scheduler']['database'].lower())
-            result = session.execute(f"SELECT COUNT(*) FROM {config['database-scheduler']['table'].lower()}")
-            cluster.shutdown()
-            return result[0][0] < config['message-count']
-        except:
-            return True
-
+        if DATABASE_SCHEDULER_ENABLED:
+            try:
+                cluster = Cluster([config['database-scheduler']['host']])
+                session = cluster.connect()
+                session.set_keyspace(config['database-scheduler']['database'].lower())
+                result = session.execute(f"SELECT COUNT(*) FROM {config['database-scheduler']['table'].lower()}")
+                cluster.shutdown()
+                return result[0][0] < config['message-count']
+            except:
+                return True
+        return False
+        
     return __mongo_running() or __cassandra_running()
 
 def analyse(config):
