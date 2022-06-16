@@ -205,16 +205,17 @@ progress_live() {
 usage() {
     echo "Usage: $0 [OPTION]..."
     echo "Build and run the application."
-    echo "      --help              display this help and exit"
-    echo "      --all               Run all services"
-    echo "      --app               run the kafka message scheduling application alone"
-    echo "      --exp               run experiment according to the configuration in 'experiment.env' file [default option]"
-    echo "      --gui               include the corresponding GUI for each service"
-    echo "      --grafana           enable the Grafana monitoring service"
-    echo "  -c, --clean             clean the application cache and logs"
-    echo "  -dc, --deep-clean       clean the application and remove all containers"
-    echo "  -p, --progress          show the progress of the application"
-    echo "  -s, --stop              stop the application"
+    echo "       --help              display this help and exit"
+    echo "       --all               Run all services"
+    echo "       --app               run the kafka message scheduling application alone"
+    echo "       --exp               run experiment according to the configuration in 'experiment.env' file [default option]"
+    echo "       --gui               include the corresponding GUI for each service"
+    echo "       --grafana           enable the Grafana monitoring service"
+    echo "  -c,  --clean             clean the application cache and logs"
+    echo "  -dc, --deep-clean        clean the application and remove all containers"
+    echo "  -p,  --progress          show the progress of the application"
+    echo "  -pl, --progress-live     show the progress of the application"
+    echo "  -s,  --stop              stop the application"
 
 }
 
@@ -248,6 +249,8 @@ main() {
         match "-dc" "$key" && deep_clean_all && EXIT=True
         match "--progress" "$key" && progress && EXIT=True
         match "-p" "$key" && progress && EXIT=True
+        match "--progress-live" "$key" && progress_live && EXIT=True
+        match "-pl" "$key" && progress_live && EXIT=True
         match "--stop" "$key" && down_all && EXIT=True
         match "-s" "$key" && down_all && EXIT=True
         shift

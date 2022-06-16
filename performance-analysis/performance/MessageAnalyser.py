@@ -71,7 +71,7 @@ def __analyse_kafka(data_path, result_path):
     data['time_group'] = data['time_group']/60
     data[['Maxiumum', '95_Percentile', 'Mean', 'time_group']].plot(x='time_group', ax=ax, label='Message Database')
     ax.fill_between(data['time_group'], data['Maxiumum'], data['Mean'], color='#D3F8D3', alpha=0.9, interpolate=True)
-    ax.fill_between(data['time_group'], data['Maxiumum'], 60, color='#ff0000', alpha=0.3, interpolate=True, where=(data['Maxiumum'] > 60))
+    ax.fill_between(data['time_group'], data['Maxiumum'], 61, color='#ff0000', alpha=0.3, interpolate=True, where=(data['Maxiumum'] > 60))
     ax.title.set_text('Kafka')
     ax.set_xlabel('Time (hours)')
     ax.set_ylabel('Message Delay (s)')
@@ -134,7 +134,7 @@ def __analyse_cassandra(data_path, result_path):
     data['time_group'] = data['time_group']/60
     data[['Maxiumum', '95_Percentile', 'Mean', 'time_group']].plot(x='time_group', ax=ax, label='Message Database')
     ax.fill_between(data['time_group'], data['Maxiumum'], data['Mean'], color='#D3F8D3', alpha=0.9, interpolate=True)
-    ax.fill_between(data['time_group'], data['Maxiumum'], 60, color='#ff0000', alpha=0.3, interpolate=True, where=(data['Maxiumum'] > 60))
+    ax.fill_between(data['time_group'], data['Maxiumum'], 61, color='#ff0000', alpha=0.3, interpolate=True, where=(data['Maxiumum'] > 60))
     ax.title.set_text('Cassandra')
     ax.set_xlabel('Time (hours)')
     ax.set_ylabel('Message Delay (s)')
@@ -197,7 +197,7 @@ def __analyse_mysql(data_path, result_path):
     data['time_group'] = data['time_group']/60
     data[['Maxiumum', '95_Percentile', 'Mean', 'time_group']].plot(x='time_group', ax=ax, label='Message Database')
     ax.fill_between(data['time_group'], data['Maxiumum'], data['Mean'], color='#D3F8D3', alpha=0.9, interpolate=True)
-    ax.fill_between(data['time_group'], data['Maxiumum'], 60, color='#ff0000', alpha=0.3, interpolate=True, where=(data['Maxiumum'] > 60))
+    ax.fill_between(data['time_group'], data['Maxiumum'], 61, color='#ff0000', alpha=0.3, interpolate=True, where=(data['Maxiumum'] > 60))
     ax.title.set_text('MySQL')
     ax.set_xlabel('Time (hours)')
     ax.set_ylabel('Message Delay (s)')
@@ -301,7 +301,7 @@ def old_analyse(config):
     md_df['time_group'] = md_df['time_group']/60
     md_df[['Maxiumum', '95_Percentile', 'Mean', 'time_group']].plot(x='time_group', ax=ax[0], label='Message Database')
     ax[0].fill_between(md_df['time_group'], md_df['Maxiumum'], md_df['Mean'], color='#D3F8D3', alpha=0.9, interpolate=True)
-    ax[0].fill_between(md_df['time_group'], md_df['Maxiumum'], 60, color='#ff0000', alpha=0.3, interpolate=True, where=(md_df['Maxiumum'] > 60))
+    ax[0].fill_between(md_df['time_group'], md_df['Maxiumum'], 61, color='#ff0000', alpha=0.3, interpolate=True, where=(md_df['Maxiumum'] > 60))
     ax[0].title.set_text('Kafka')
     ax[0].set_xlabel('Time (hours)')
     ax[0].set_ylabel('Message Delay (s)')
@@ -315,7 +315,7 @@ def old_analyse(config):
     ds_df['time_group'] = ds_df['time_group']/60
     ds_df[['Maxiumum', '95_Percentile', 'Mean', 'time_group']].plot(x='time_group', ax=ax[1], label='Database Scheduler')
     ax[1].fill_between(ds_df['time_group'], ds_df['Maxiumum'], ds_df['Mean'], color='#D3F8D3', alpha=0.9, interpolate=True)
-    ax[1].fill_between(ds_df['time_group'], ds_df['Maxiumum'], 60, color='#ff0000', alpha=0.3, interpolate=True, where=(ds_df['Maxiumum'] > 60))
+    ax[1].fill_between(ds_df['time_group'], ds_df['Maxiumum'], 61, color='#ff0000', alpha=0.3, interpolate=True, where=(ds_df['Maxiumum'] > 60))
     ax[1].title.set_text('Cassandra')
     ax[1].set_xlabel('Time (hours)')
     ax[1].set_ylabel('Message Delay (s)')
