@@ -69,7 +69,7 @@ impl Task {
             
                     let sm_time = sm_time.unwrap();
                     let sm_time = chrono::NaiveDateTime::parse_from_str(sm_time.as_str(), get_string(&config, "sm_time_format").as_str()).unwrap();
-                    let time_diff = (sm_time.time() - chrono::Local::now().time()).num_seconds();
+                    let time_diff = (sm_time - chrono::Local::now().naive_local()).num_seconds();
                     
                     if time_diff < -1 * get_number(&config, "sm_miniumum_delay") as i64 {
                         let error_msg = format!("WORKER DELAY: {} secs : {:?}", time_diff, sm_time);
