@@ -66,6 +66,8 @@ def get_config():
     config['data_path'] = get_absolute_path('../../' + config['data_path'])
     os.makedirs(config['data_path'], exist_ok=True)
 
+    config['root_path'] = get_absolute_path('../../')
+
     config['monitoring'] = {}
     config['monitoring']['docker'] = get_absolute_path('../../monitoring/docker-monitor/logs')
     config['monitoring']['prometheus'] = get_absolute_path('../../monitoring/prometheus')

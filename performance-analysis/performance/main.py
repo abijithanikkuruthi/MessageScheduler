@@ -155,6 +155,9 @@ if __name__ == '__main__':
 
     config = get_config()
 
+    # Save experiment environment file in data folder
+    shutil.copyfile(f'{config["root_path"]}{os.sep}experiment.env', f'{config["data_path"]}{os.sep}experiment.env')
+
     printinfo('Waiting for experiment to finish')
 
     experiment_running() and time.sleep(EXPERIMENT_DURATION_HOURS * 60 * 60)
