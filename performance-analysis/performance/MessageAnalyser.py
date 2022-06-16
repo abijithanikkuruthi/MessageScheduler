@@ -13,8 +13,7 @@ def __analyse_kafka(data_path, result_path):
     prefix = 'kafka_'
 
     # Clean up the data
-    data.columns = [i.strip() for i in data.columns]
-    data = data.drop(columns=['_id', '__sm_exp_id', '__sm_msg_id', 'topic', '__sm_job_id'])
+    # Pass
     
     # Message Hop Count
     data['__sm_message_hopcount'] = data['__sm_message_hopcount'].fillna(0).astype(int)

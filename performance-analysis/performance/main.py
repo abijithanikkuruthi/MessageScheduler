@@ -6,7 +6,7 @@ from cassandra.cluster import Cluster
 import mysql.connector
 import time
 
-from common import get_config, printinfo, printsuccess, printwarning, printerror
+from common import get_config, printinfo, printsuccess, printwarning, printerror, ProgressInfo
 import ServiceAnalyser
 import MessageAnalyser
 from constants import *
@@ -34,10 +34,20 @@ def collect(config):
         os.makedirs(kafka_data_path, exist_ok=True)
 
         try:
-            printinfo('Collecting Kafka data')
             message_database = MongoClient(MESSENGER_DATABASE_URL)[MESSENGER_DATABASE_NAME][MESSENGER_DATABASE_TABLE]
-            message_database_data = message_database.find()
-            pd.DataFrame(message_database_data).to_csv(f'{kafka_data_path}{os.sep}messages.csv')
+            msg_count = message_database.count_documents({})
+            kafka_progress = ProgressInfo('Kafka data collection', msg_count)
+            output_path = f'{kafka_data_path}{os.sep}messages.csv'
+            os.remove(output_path) if os.path.exists(output_path) else None
+
+            printinfo(f'Collecting {msg_count} messages from Kafka')
+
+            for i in range(0, msg_count, KAFKA_BATCH_SIZE):
+                messages = message_database.find({}, { 'time': 1, '__sm_mh_timestamp': 1, '__sm_worker_timestamp': 1, '__sm_message_hopcount' : 1 }).skip(i).limit(KAFKA_BATCH_SIZE)
+                df = pd.DataFrame(messages, columns=['time', '__sm_mh_timestamp', '__sm_worker_timestamp', '__sm_message_hopcount'])
+                df.to_csv(output_path, mode='a', header=not os.path.exists(output_path), index=False)
+                kafka_progress.update(i)
+
         except Exception as e:
             printwarning('Could not collect Kafka data : ' + str(e))
             constants.KAFKA_ENABLED = False

@@ -2,6 +2,26 @@ import time
 import os
 from constants import *
 
+class ProgressInfo:
+    def __init__(self, name, total) -> None:
+        self.total = int(total)
+        self.name = name
+        self.current = 0
+        self.progress_keys = ['1', '10', '25', '33' ,'50', '67', '75', '90', '100']
+        self.progress = { k : False for k in self.progress_keys }
+    
+    def update(self, current):
+        self.current = int(current)
+        percent = int(self.current / self.total * 100)
+        message = None
+        for p in self.progress_keys:
+            if percent >= int(p) and not self.progress[p]:
+                self.progress[p] = True
+                message = p + '%'
+
+        if message:
+            printinfo(f'{self.name} progress: {message}')
+
 class colors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
