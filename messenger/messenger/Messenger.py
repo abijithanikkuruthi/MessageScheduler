@@ -7,7 +7,7 @@ from cassandra.cluster import Cluster
 from pymongo import MongoClient
 import mysql.connector
 
-from common import printsuccess, id_generator, printerror, getTime, printwarning, random_data, get_insert_message_cassandra, get_insert_message_mysql
+from common import printsuccess, id_generator, printerror, getTime, printwarning, random_data, get_insert_message_cassandra, get_insert_message_mysql, printinfo
 from constants import *
 
 class ProgressInfo:
@@ -28,7 +28,7 @@ class ProgressInfo:
                 message = p + '%'
 
         if message:
-            printsuccess(f'{self.name} progress: {message}')
+            printinfo(f'{self.name} progress: {message}')
 
 class Messenger(multiprocessing.Process):
     def __init__(self):
