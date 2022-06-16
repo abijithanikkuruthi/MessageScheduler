@@ -1,0 +1,286 @@
+#!/bin/bash
+
+# Import experiment environment variables
+set -a
+source experiment.env
+set +a
+
+# Defining application module paths
+APPLICATION_FOLDER=$(pwd)
+KAFKA_FOLDER=$APPLICATION_FOLDER/kafka
+DATABASE_SCHEDULER_FOLDER=$APPLICATION_FOLDER/database-scheduler
+MONITORING_FOLDER=$APPLICATION_FOLDER/monitoring
+MESSENGER_FOLDER=$APPLICATION_FOLDER/messenger
+PERFORMANCE_ANALYSIS_FOLDER=$APPLICATION_FOLDER/performance-analysis
+
+# Default parameters for GUI
+DB_GUI=False
+MONITORING_GUI=False
+
+#Build Script
+build_app() { cd $APPLICATION_FOLDER; docker-compose build; }
+build_kafka() { cd $KAFKA_FOLDER; docker-compose build kafka zookeeper; }
+build_kafka_gui() { cd $KAFKA_FOLDER; docker-compose build kafka zookeeper kafka-gui; }
+build_database_scheduler_with_gui() { cd $DATABASE_SCHEDULER_FOLDER; docker-compose build; }
+build_cassandra() { cd $DATABASE_SCHEDULER_FOLDER; docker-compose build database-scheduler cassandra; }
+build_cassandra_gui() { cd $DATABASE_SCHEDULER_FOLDER; docker-compose build database-scheduler cassandra cassandra-web; }
+build_mysql() { cd $DATABASE_SCHEDULER_FOLDER; docker-compose build database-scheduler mysql; }
+build_mysql_gui() { cd $DATABASE_SCHEDULER_FOLDER; docker-compose build database-scheduler mysql adminer; }
+build_gui_monitoring() { cd $MONITORING_FOLDER; docker-compose build; }
+build_docker_monitor() { cd $MONITORING_FOLDER; docker-compose build docker-monitor; }
+build_messenger_all() { cd $MESSENGER_FOLDER; docker-compose build; }
+build_messenger() { cd $MESSENGER_FOLDER; docker-compose build messenger; }
+build_mongo() { cd $MESSENGER_FOLDER; docker-compose build mongo messenger; }
+build_mongo_gui() { cd $MESSENGER_FOLDER; docker-compose build messenger mongo mongo-express; }
+build_performance_analysis() { cd $PERFORMANCE_ANALYSIS_FOLDER; docker-compose build; }
+
+build_experiment() {
+    # Databases to build
+    if [ "$KAFKA_ENABLED" = "True" ]; then
+        if [ "$DB_GUI" = "True" ]; then
+            build_kafka_gui
+        else
+            build_kafka
+        fi
+        build_app
+    fi
+    if [ "$DATABASE_SCHEDULER_CASSANDRA_ENABLED" = "True" ]; then
+        if [ "$DB_GUI" = "True" ]; then
+            build_cassandra_gui
+        else
+            build_cassandra
+        fi
+    fi
+    if [ "$DATABASE_SCHEDULER_MYSQL_ENABLED" = "True" ]; then
+        if [ "$DB_GUI" = "True" ]; then
+            build_mysql_gui
+        else
+            build_mysql
+        fi
+    fi
+    # Monitoring
+    if [ "$MONITORING_GUI" = "True" ]; then
+        build_gui_monitoring
+    else
+        build_docker_monitor
+    fi
+
+    # Messaging - No need for mongo DB if Kafka is disabled
+    if [ "$KAFKA_ENABLED" = "True" ]; then
+        if [ "$DB_GUI" = "True" ]; then
+            build_messenger_all
+        else
+            build_mongo
+        fi
+    else
+        build_messenger
+    fi
+
+    # Performance analysis - data collector
+    build_performance_analysis
+}
+
+build_all() {
+    cd $KAFKA_FOLDER; docker-compose build;
+    cd $APPLICATION_FOLDER; docker-compose build;
+    cd $DATABASE_SCHEDULER_FOLDER; docker-compose build;
+    cd $MONITORING_FOLDER; docker-compose build;
+    cd $MESSENGER_FOLDER; docker-compose build;
+    cd $PERFORMANCE_ANALYSIS_FOLDER; docker-compose build;
+}
+
+# Run Script
+run_app() { cd $APPLICATION_FOLDER; docker-compose up -d; }
+run_kafka() { cd $KAFKA_FOLDER; docker-compose up -d kafka zookeeper; }
+run_kafka_gui() { cd $KAFKA_FOLDER; docker-compose up -d kafka zookeeper kafka-gui; }
+run_database_scheduler_with_gui() { cd $DATABASE_SCHEDULER_FOLDER; docker-compose up -d; }
+run_cassandra() { cd $DATABASE_SCHEDULER_FOLDER; docker-compose up -d database-scheduler cassandra; }
+run_cassandra_gui() { cd $DATABASE_SCHEDULER_FOLDER; docker-compose up -d database-scheduler cassandra cassandra-web; }
+run_mysql() { cd $DATABASE_SCHEDULER_FOLDER; docker-compose up -d database-scheduler mysql; }
+run_mysql_gui() { cd $DATABASE_SCHEDULER_FOLDER; docker-compose up -d database-scheduler mysql adminer; }
+run_gui_monitoring() { cd $MONITORING_FOLDER; docker-compose up -d; }
+run_docker_monitor() { cd $MONITORING_FOLDER; docker-compose up -d docker-monitor; }
+run_messenger_all() { cd $MESSENGER_FOLDER; docker-compose up -d; }
+run_messenger() { cd $MESSENGER_FOLDER; docker-compose up -d messenger; }
+run_mongo() { cd $MESSENGER_FOLDER; docker-compose up -d mongo messenger; }
+run_mongo_gui() { cd $MESSENGER_FOLDER; docker-compose up -d messenger mongo mongo-express; }
+run_performance_analysis() { cd $PERFORMANCE_ANALYSIS_FOLDER; docker-compose up -d; }
+
+run_experiment() {
+    # Databases to build
+    if [ "$KAFKA_ENABLED" = "True" ]; then
+        if [ "$DB_GUI" = "True" ]; then
+            run_kafka_gui
+        else
+            run_kafka
+        fi
+        run_app
+    fi
+    if [ "$DATABASE_SCHEDULER_CASSANDRA_ENABLED" = "True" ]; then
+        if [ "$DB_GUI" = "True" ]; then
+            run_cassandra_gui
+        else
+            run_cassandra
+        fi
+    fi
+    if [ "$DATABASE_SCHEDULER_MYSQL_ENABLED" = "True" ]; then
+        if [ "$DB_GUI" = "True" ]; then
+            run_mysql_gui
+        else
+            run_mysql
+        fi
+    fi
+    # Monitoring
+    if [ "$MONITORING_GUI" = "True" ]; then
+        run_gui_monitoring
+    else
+        run_docker_monitor
+    fi
+
+    # Messaging - No need for mongo DB if Kafka is disabled
+    if [ "$KAFKA_ENABLED" = "True" ]; then
+        if [ "$DB_GUI" = "True" ]; then
+            run_messenger_all
+        else
+            run_mongo
+        fi
+    else
+        run_messenger
+    fi
+
+    # Performance analysis - data collector
+    run_performance_analysis
+}
+
+# Run all services
+run_all() {
+    cd $KAFKA_FOLDER; docker-compose up -d;
+    cd $APPLICATION_FOLDER; docker-compose up -d;
+    cd $DATABASE_SCHEDULER_FOLDER; docker-compose up -d;
+    cd $MONITORING_FOLDER; docker-compose up -d;
+    cd $MESSENGER_FOLDER; docker-compose up -d;
+    cd $PERFORMANCE_ANALYSIS_FOLDER; docker-compose up -d;
+}
+
+# Stop all containers
+down_all() {
+    echo -e "\e[32mStopping all services...\e[0m"
+
+    cd $PERFORMANCE_ANALYSIS_FOLDER; docker-compose down
+    cd $MONITORING_FOLDER; docker-compose down
+    cd $MESSENGER_FOLDER; docker-compose down
+    cd $DATABASE_SCHEDULER_FOLDER; docker-compose down
+    cd $APPLICATION_FOLDER; docker-compose down
+    cd $KAFKA_FOLDER; docker-compose down
+}
+
+# Clean all container cache and other logs
+clean_all() {
+    echo -e "\e[32mCleaning all container cache and logs...\e[0m"
+    docker system prune -f
+
+    # Clean Monitor logs
+    rm -rf $MONITORING_FOLDER/docker-monitor/logs/*
+    rm -rf $MONITORING_FOLDER/prometheus
+}
+
+deep_clean_all() {
+    echo -e "\e[32mDeep Cleaning all container cache, images and logs...\e[0m"
+
+    clean_all
+    docker system prune -af
+    docker volume prune -f
+}
+
+progress() {
+    docker logs messenger;
+    docker logs performance;
+    return 0;
+}
+
+progress_live() {
+    watch -n 5 --color "docker logs messenger;docker logs performance;"
+}
+
+usage() {
+    echo "Usage: $0 [OPTION]..."
+    echo "Build and run the application."
+    echo "       --help              display this help and exit"
+    echo "       --all               Run all services"
+    echo "       --app               run the kafka message scheduling application alone"
+    echo "       --exp               run experiment according to the configuration in 'experiment.env' file [default option]"
+    echo "       --gui               include the corresponding GUI for each service"
+    echo "       --grafana           enable the Grafana monitoring service"
+    echo "  -c,  --clean             clean the application cache and logs"
+    echo "  -dc, --deep-clean        clean the application and remove all containers"
+    echo "  -p,  --progress          show the progress of the application"
+    echo "  -pl, --progress-live     show the progress of the application"
+    echo "  -s,  --stop              stop the application"
+
+}
+
+match() {
+    if [ "$1" = "$2" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+main() {
+
+    RUN_ALL=False
+    RUN_APP=False
+    RUN_EXPERIMENT=True # Default Choice
+    EXIT=False
+
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        key="$1"
+        match "--all" "$key" && RUN_ALL=True && EXIT=False
+        match "--app" "$key" && RUN_APP=True && EXIT=False
+        match "--exp" "$key" && RUN_EXPERIMENT=True && EXIT=False
+        match "--gui" "$key" && DB_GUI=True && EXIT=False
+        match "--grafana" "$key" && MONITORING_GUI=True && EXIT=False
+        match "--help" "$key" && usage && EXIT=True
+        match "--clean" "$key" && clean_all && EXIT=True
+        match "-c" "$key" && clean_all && EXIT=True
+        match "--deep-clean" "$key" && deep_clean_all && EXIT=True
+        match "-dc" "$key" && deep_clean_all && EXIT=True
+        match "--progress" "$key" && progress && EXIT=True
+        match "-p" "$key" && progress && EXIT=True
+        match "--progress-live" "$key" && progress_live && EXIT=True
+        match "-pl" "$key" && progress_live && EXIT=True
+        match "--stop" "$key" && down_all && EXIT=True
+        match "-s" "$key" && down_all && EXIT=True
+        shift
+    done
+
+    if [ $EXIT = True ]; then
+        exit 0
+    fi
+
+    # Clean setup before running the application or experiment
+    down_all
+    clean_all
+
+    # Create private network
+    docker network create kafka-network
+
+    if [ "$RUN_ALL" = "True" ]; then
+        build_all
+        run_all
+        progress_live
+    elif [ "$RUN_EXPERIMENT" = "True" ]; then
+        build_experiment
+        run_experiment
+        progress_live
+    elif [ "$RUN_APP" = "True" ]; then
+        build_app
+        run_app
+        sleep 5
+        docker logs messagehandler; docker logs scheduler; docker logs worker;
+    fi
+}
+
+main "$@"

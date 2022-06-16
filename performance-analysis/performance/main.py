@@ -102,7 +102,7 @@ def experiment_running(print_log=False):
                 (not running) and printsuccess('Kafka has finished')
                 return running
             except Exception as e:
-                printerror('Could not connect to MongoDB : ' + str(e))
+                print_log and printerror('Could not connect to MongoDB : ' + str(e))
                 return True
         return False
 
@@ -119,7 +119,7 @@ def experiment_running(print_log=False):
                 (not running) and printsuccess('Cassandra has finished')
                 return running
             except Exception as e:
-                printerror('Could not connect to Cassandra : ' + str(e))
+                print_log and printerror('Could not connect to Cassandra : ' + str(e))
                 return True
         return False
     
@@ -139,7 +139,7 @@ def experiment_running(print_log=False):
                 (not running) and printsuccess('MySQL has finished')
                 return running
             except Exception as e:
-                printerror('Could not connect to MySQL : ' + str(e))
+                print_log and printerror('Could not connect to MySQL : ' + str(e))
                 return True
         return False
     mongo_running = __mongo_running()
@@ -155,14 +155,13 @@ if __name__ == '__main__':
 
     config = get_config()
 
-    printsuccess('Starting performance analysis service')
     printinfo('Waiting for experiment to finish')
 
     experiment_running() and time.sleep(EXPERIMENT_DURATION_HOURS * 60 * 60)
 
     retries = 0
     while experiment_running(print_log=True):
-        printwarning(f'Experiment is running... Waiting for 1 minute...')
+        printwarning(f'All messages are yet to be collected... Waiting for 1 more minute...')
         time.sleep(60)
         retries += 1
         if retries > 10:
@@ -175,4 +174,4 @@ if __name__ == '__main__':
     analyse(config)
     printsuccess('Data analyzed!')
     printsuccess(f'Data is stored in {config["data_path"]}')
-    printsuccess('Finished!')
+    printsuccess('Experiment Finished! You can now safely stop the containers using "--stop" parameter')

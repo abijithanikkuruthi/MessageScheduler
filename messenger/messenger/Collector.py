@@ -41,7 +41,7 @@ class CollectorProcess(multiprocessing.Process):
                         consumer.subscribe([KAFKA_MESSAGE_TOPIC])
                     else:
                         message_count += 1
-                        message_database.insert_one({ i[0]:i[1].decode() for i in message.headers()})
+                        message_database.insert_one({ i[0]:i[1].decode() for i in message.headers() if i[0] in ['time', '__sm_mh_timestamp', '__sm_worker_timestamp', '__sm_message_hopcount']})
 
             except Exception as e:
                 try:
