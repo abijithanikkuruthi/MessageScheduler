@@ -5,6 +5,7 @@ from pymongo import MongoClient
 from cassandra.cluster import Cluster
 import mysql.connector
 import time
+import datetime
 
 from common import get_config, printinfo, printsuccess, printwarning, printerror, ProgressInfo
 import ServiceAnalyser
@@ -158,7 +159,7 @@ if __name__ == '__main__':
     # Save experiment environment file in data folder
     shutil.copyfile(f'{config["root_path"]}{os.sep}experiment.env', f'{config["data_path"]}{os.sep}experiment.env')
 
-    printinfo('Waiting for experiment to finish')
+    printinfo(f'Waiting for experiment to finish. Expected completion time: {(datetime.datetime.now() + datetime.timedelta(hours=EXPERIMENT_DURATION_HOURS)).strftime(TIME_FORMAT)}')
 
     experiment_running() and time.sleep(EXPERIMENT_DURATION_HOURS * 60 * 60)
 

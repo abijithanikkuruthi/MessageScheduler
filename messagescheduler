@@ -20,7 +20,7 @@ MONITORING_GUI=False
 #Build Script
 build_app() { cd $APPLICATION_FOLDER; docker-compose build; }
 build_kafka() { cd $KAFKA_FOLDER; docker-compose build kafka zookeeper; }
-build_kafka_gui() { cd $KAFKA_FOLDER; docker-compose build kafka zookeeper kafka-gui; }
+build_kafka_gui() { cd $KAFKA_FOLDER; docker-compose build kafka zookeeper kafka-ui; }
 build_database_scheduler_with_gui() { cd $DATABASE_SCHEDULER_FOLDER; docker-compose build; }
 build_cassandra() { cd $DATABASE_SCHEDULER_FOLDER; docker-compose build database-scheduler cassandra; }
 build_cassandra_gui() { cd $DATABASE_SCHEDULER_FOLDER; docker-compose build database-scheduler cassandra cassandra-web; }
@@ -92,7 +92,7 @@ build_all() {
 # Run Script
 run_app() { cd $APPLICATION_FOLDER; docker-compose up -d; }
 run_kafka() { cd $KAFKA_FOLDER; docker-compose up -d kafka zookeeper; }
-run_kafka_gui() { cd $KAFKA_FOLDER; docker-compose up -d kafka zookeeper kafka-gui; }
+run_kafka_gui() { cd $KAFKA_FOLDER; docker-compose up -d kafka zookeeper kafka-ui; }
 run_database_scheduler_with_gui() { cd $DATABASE_SCHEDULER_FOLDER; docker-compose up -d; }
 run_cassandra() { cd $DATABASE_SCHEDULER_FOLDER; docker-compose up -d database-scheduler cassandra; }
 run_cassandra_gui() { cd $DATABASE_SCHEDULER_FOLDER; docker-compose up -d database-scheduler cassandra cassandra-web; }
@@ -114,6 +114,7 @@ run_experiment() {
         else
             run_kafka
         fi
+        sleep 5 # Wait for kafka to be ready before starting message scheduler
         run_app
     fi
     if [ "$DATABASE_SCHEDULER_CASSANDRA_ENABLED" = "True" ]; then
@@ -130,12 +131,17 @@ run_experiment() {
             run_mysql
         fi
     fi
+
+    sleep 5 # 5 seconds for warmup before starting monitoring
+
     # Monitoring
     if [ "$MONITORING_GUI" = "True" ]; then
         run_gui_monitoring
     else
         run_docker_monitor
     fi
+
+    sleep 5 # 5 seconds for warmup before starting messenger
 
     # Messaging - No need for mongo DB if Kafka is disabled
     if [ "$KAFKA_ENABLED" = "True" ]; then
