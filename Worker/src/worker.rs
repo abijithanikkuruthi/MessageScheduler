@@ -1,10 +1,9 @@
 use rdkafka::config::ClientConfig;
 use rdkafka::consumer::base_consumer::BaseConsumer;
 use rdkafka::message::{Headers, BorrowedHeaders};
-use rdkafka::producer::{FutureProducer, FutureRecord};
-use futures::executor;
-
-use rdkafka::consumer::Consumer;
+use rdkafka::producer::{Producer, BaseProducer, BaseRecord};
+use rdkafka::util::Timeout;
+use rdkafka::consumer::{Consumer, CommitMode};
 use rdkafka::message::Message;
 use rdkafka::topic_partition_list::TopicPartitionList;
 
@@ -12,6 +11,7 @@ use serde_json::Value as Json;
 use serde_json::json;
 
 use std::process::exit;
+use core::time::Duration;
 
 use crate ::constants::Constants;
 use crate ::common::*;
@@ -125,64 +125,61 @@ impl Task {
                 let group_id = format!("{}{}_{}", get_string(&config, "sm_consumer_group_prefix"), job_name, task_id);
 
                 let consumer : BaseConsumer = ClientConfig::new()
-                    .set("group.id", group_id)
+                    .set("group.id", &group_id)
                     .set("bootstrap.servers", get_string(&config, "kafka_server"))
-                    .set("enable.auto.commit", "true")
+                    .set("enable.auto.commit", "false")
                     .set("auto.offset.reset", "earliest").create().expect("Task.__run(): Consumer creation error");
 
-                let producer : &FutureProducer = &ClientConfig::new()
+                let producer : BaseProducer = ClientConfig::new()
                     .set("bootstrap.servers", get_string(&config, "kafka_server"))
+                    .set("enable.idempotence", "true")
+                    .set("transactional.id", &group_id)
+                    .set("acks", "all")
                     .create().expect("Task.__run(): Producer creation error");
 
                 let mut tp_list = TopicPartitionList::new();
                 tp_list.add_partition(job_name, task_id);
                 consumer.assign(&tp_list).expect("Task.__run(): Topic Assignment error");
 
-                loop {
-                    match consumer.poll(std::time::Duration::from_secs(get_number(&config, "worker_consumer_timeout"))) {
-                        Some(message) => {
-                            let message = message.expect("Task.__run(): Message Parse Error");
-                            
-                            let headers = message.headers().unwrap();
+                match producer.init_transactions(Timeout::Never) {
+                    Ok(_) => loop {
+                        match consumer.poll(std::time::Duration::from_secs(get_number(&config, "worker_consumer_timeout"))) {
+                            Some(Ok(message)) => {
+                                let headers = message.headers().unwrap();
 
-                            let topic_name = __get_topic_name(&config, &headers);
-                            if topic_name == None {
-                                continue;
-                            }
-                            let topic_name = topic_name.unwrap();
-                            let msg_job_id = __get_job_id(&headers, &config);
-                            let msg_hop_count = (__get_hop_count(&headers, &config) + 1) as i32;
-
-                            let msg_headers = headers.detach().add(&get_string(&config, "sm_header_job_id_key"), get_string(&task, "job_id").as_bytes())
-                                .add(&get_string(&config, "sm_header_message_hopcount_key"), format!("{}", msg_hop_count).as_bytes())
-                                .add(&get_string(&config, "sm_header_worker_timestamp_key"), get_time().as_bytes());
-
-                            match executor::block_on(producer.send(
-                                FutureRecord::to(&topic_name)
-                                    .payload(message.payload().unwrap_or_default())
-                                    .key(message.key().unwrap_or_default())
-                                    .headers(msg_headers)
-                                    .partition(task_id),
-                                std::time::Duration::from_secs(0),
-                            )) {
-                                Ok(_) => {
-                                    if msg_job_id == get_string(&task, "job_id") {
-                                        break;
-                                    }
-                                },
-                                Err(e) => {
-                                    let err_msg = format!("Task.__run(): Producer send error: {:?}", e);
-                                    print_error(&err_msg);
-                                    return Err(err_msg);
+                                let topic_name = __get_topic_name(&config, &headers);
+                                if topic_name == None {
+                                    continue;
                                 }
-                            }
-                        },
-                        None => {
-                            break;
+                                let topic_name = topic_name.unwrap();
+                                let msg_job_id = __get_job_id(&headers, &config);
+                                let msg_hop_count = (__get_hop_count(&headers, &config) + 1) as i32;
+
+                                let msg_headers = headers.detach().add(&get_string(&config, "sm_header_job_id_key"), get_string(&task, "job_id").as_bytes())
+                                    .add(&get_string(&config, "sm_header_message_hopcount_key"), format!("{}", msg_hop_count).as_bytes())
+                                    .add(&get_string(&config, "sm_header_worker_timestamp_key"), get_time().as_bytes());
+
+                                let msg_payload = message.payload().unwrap_or_default();
+                                let msg_key = message.key().unwrap_or_default();
+
+                                producer.begin_transaction().unwrap();
+                                producer.send(BaseRecord::to(topic_name.as_str()).payload(msg_payload).key(msg_key).headers(msg_headers)).unwrap();
+                                producer.commit_transaction(Timeout::Never).unwrap();
+                                
+                                consumer.commit_message(&message, CommitMode::Sync).unwrap();
+
+                                if msg_job_id == get_string(&task, "job_id") {
+                                    break;
+                                }
+                            },
+                            Some(Err(_)) => continue,
+                            None => break
                         }
                     }
+                    Err(_) => {
+                        print_error("Task.__run(): Producer init_transactions error");
+                    }
                 }
-
                 Ok(())
             };
             let worker_success = task_obj.worker_success.clone();

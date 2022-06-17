@@ -1204,7 +1204,6 @@ name = "worker"
 version = "1.0.0"
 dependencies = [
  "chrono",
- "futures",
  "libc",
  "nix",
  "rdkafka",
