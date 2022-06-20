@@ -2,7 +2,8 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 from constants import *
-from common import printinfo
+from common import get_absolute_path, printinfo, printwarning
+import gc
 
 def __analyse_kafka(data_path, result_path):
 
@@ -32,6 +33,7 @@ def __analyse_kafka(data_path, result_path):
     data.__sm_worker_timestamp = pd.to_datetime(data.__sm_worker_timestamp)
     data['delay'] = (data.time - data.__sm_worker_timestamp).astype('timedelta64[s]').astype(int)
     data['abs_delay'] = abs((data.time - data.__sm_worker_timestamp).astype('timedelta64[s]')).astype(int)
+    plt.close()
 
     # Message Delay Histogram
     fig, ax = plt.subplots(figsize=(16, 9))
@@ -39,6 +41,7 @@ def __analyse_kafka(data_path, result_path):
     ax.set_ylabel("Number of Messages (Frequency)")
     ax.set_xlabel("Message Delay (Seconds)")
     plt.savefig(f'{result_path}{os.sep}{prefix}messages_delay.pdf', bbox_inches='tight')
+    plt.close()
 
     # Message Delay Distribution
     fig, ax = plt.subplots(figsize=(16, 9))
@@ -46,6 +49,7 @@ def __analyse_kafka(data_path, result_path):
     ax.set_ylabel("Number of Messages (Frequency)")
     ax.set_xlabel("Message Delay (Seconds)")
     plt.savefig(f'{result_path}{os.sep}{prefix}messages_delay_distribution.pdf', bbox_inches='tight')
+    plt.close()
 
     # Message Absolute Delay Histogram
     fig, ax = plt.subplots(figsize=(16, 9))
@@ -53,6 +57,7 @@ def __analyse_kafka(data_path, result_path):
     ax.set_ylabel("Number of Messages (Frequency)")
     ax.set_xlabel("Message Absolute Delay (Seconds)")
     plt.savefig(f'{result_path}{os.sep}{prefix}messages_abs_delay.pdf', bbox_inches='tight')
+    plt.close()
 
     # Message Delay Statistics
     data['delay'].describe().to_csv(f'{result_path}{os.sep}{prefix}messages_delay_statistics.csv')
@@ -64,20 +69,37 @@ def __analyse_kafka(data_path, result_path):
 
     data['time_group'] = ((data['time'] - data['time'].min()).astype('timedelta64[s]')/60).astype(int)
     
-    data['Maxiumum'] = data.groupby('time_group')['abs_delay'].transform('max')
-    data['95_Percentile'] = data.groupby('time_group')['abs_delay'].transform('quantile', 0.95)
-    data['Mean'] = data.groupby('time_group')['abs_delay'].transform('mean')
+    data_groupby_time_group = data[['time_group', 'abs_delay']].groupby('time_group')['abs_delay']
+
+    data = data[['time_group']]
+    data['Maxiumum'] = data_groupby_time_group.transform('max')
+    data['95_Percentile'] = data_groupby_time_group.transform('quantile', 0.95)
+    data['Mean'] = data_groupby_time_group.transform('mean')
+
+    del data_groupby_time_group
+    gc.collect()
 
     data['time_group'] = data['time_group']/60
     data[['Maxiumum', '95_Percentile', 'Mean', 'time_group']].plot(x='time_group', ax=ax, label='Message Database')
-    ax.fill_between(data['time_group'], data['Maxiumum'], data['Mean'], color='#D3F8D3', alpha=0.9, interpolate=True)
-    ax.fill_between(data['time_group'], data['Maxiumum'], 61, color='#ff0000', alpha=0.3, interpolate=True, where=(data['Maxiumum'] > 60))
+    
+    # do fill_between in blocks of 100000
+    for i in range(0, len(data), 100000):
+        ax.fill_between(data.iloc[i:i+100000]['time_group'], data.iloc[i:i+100000]['Maxiumum'], data.iloc[i:i+100000]['Mean'], color='#D3F8D3', alpha=0.9, interpolate=True, linewidth=0.0)
+    
+    for i in range(0, len(data), 100000):
+        ax.fill_between(data.iloc[i:i+100000]['time_group'], data.iloc[i:i+100000]['Maxiumum'], 61, color='#ff0000', alpha=0.3, interpolate=True, where=(data.iloc[i:i+100000]['Maxiumum'] > 60), linewidth=0.0)
+    
     ax.title.set_text('Kafka')
     ax.set_xlabel('Time (hours)')
     ax.set_ylabel('Message Delay (s)')
 
-    plt.savefig(f'{result_path}{os.sep}{prefix}messages_delay_over_time.pdf', bbox_inches='tight')
+    printinfo(f'Saving {result_path}{os.sep}{prefix}messages_delay_over_time.jpg')
 
+    gc.collect()
+
+    plt.savefig(f'{result_path}{os.sep}{prefix}messages_delay_over_time.jpg', bbox_inches='tight')
+    plt.savefig(f'{result_path}{os.sep}{prefix}messages_delay_over_time.pdf', bbox_inches='tight')
+    plt.close()
 
 def __analyse_cassandra(data_path, result_path):
 
@@ -323,3 +345,36 @@ def old_analyse(config):
     fig.savefig(f'{result_path}/message_delay_overtime.pdf', bbox_inches='tight')
 
     plt.close('all')
+
+if __name__ == '__main__':
+    import sys
+    if len(sys.argv) > 1:
+        path = get_absolute_path(sys.argv[1])
+        result_path = f'{path}/result/'
+    else:
+        printwarning(f'Usage: {sys.argv[0]} <data_path> [OPTIONS]')
+        exit('Please provide a data path')
+
+    # Check what options were provided
+    if len(sys.argv) > 2:
+        for arg in sys.argv[2:]:
+            if arg == '--kafka':
+                __analyse_kafka(f'{path}{os.sep}kafka{os.sep}messages.csv', result_path)
+            elif arg == '--cassandra':
+                __analyse_cassandra(f'{path}{os.sep}cassandra{os.sep}messages.csv', result_path)
+            elif arg == '--mysql':
+                __analyse_mysql(f'{path}{os.sep}mysql{os.sep}messages.csv', result_path)
+            elif arg == '--all':
+                __analyse_kafka(f'{path}{os.sep}kafka{os.sep}messages.csv', result_path)
+                __analyse_cassandra(f'{path}{os.sep}cassandra{os.sep}messages.csv', result_path)
+                __analyse_mysql(f'{path}{os.sep}mysql{os.sep}messages.csv', result_path)
+            else:
+                printwarning(f'Unknown option: {arg}')
+                exit('Please provide a valid option')
+    else:
+        __analyse_kafka(f'{path}{os.sep}kafka{os.sep}messages.csv', result_path)
+        __analyse_cassandra(f'{path}{os.sep}cassandra{os.sep}messages.csv', result_path)
+        __analyse_mysql(f'{path}{os.sep}mysql{os.sep}messages.csv', result_path)
+
+        
+    
