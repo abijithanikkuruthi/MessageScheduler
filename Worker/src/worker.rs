@@ -1,8 +1,9 @@
 use rdkafka::config::ClientConfig;
 use rdkafka::consumer::base_consumer::BaseConsumer;
 use rdkafka::message::{Headers, BorrowedHeaders};
-use rdkafka::producer::{FutureProducer, FutureRecord};
-use futures::executor;
+use rdkafka::util::Timeout;
+use rdkafka::producer::{BaseProducer, BaseRecord};
+use rdkafka::error::{KafkaError, RDKafkaErrorCode};
 
 use rdkafka::consumer::Consumer;
 use rdkafka::message::Message;
@@ -12,10 +13,11 @@ use serde_json::Value as Json;
 use serde_json::json;
 
 use std::process::exit;
+use std::time::{Duration, Instant};
 
-use crate ::constants::Constants;
-use crate ::common::*;
-use crate ::multiprocess as mp;
+use crate::constants::Constants;
+use crate::common::*;
+use crate::multiprocess as mp;
 
 struct Task {
     task : Json,
@@ -130,7 +132,7 @@ impl Task {
                     .set("enable.auto.commit", "true")
                     .set("auto.offset.reset", "earliest").create().expect("Task.__run(): Consumer creation error");
 
-                let producer : &FutureProducer = &ClientConfig::new()
+                let producer : BaseProducer = ClientConfig::new()
                     .set("bootstrap.servers", get_string(&config, "kafka_server"))
                     .create().expect("Task.__run(): Producer creation error");
 
@@ -140,9 +142,7 @@ impl Task {
 
                 loop {
                     match consumer.poll(std::time::Duration::from_secs(get_number(&config, "worker_consumer_timeout"))) {
-                        Some(message) => {
-                            let message = message.expect("Task.__run(): Message Parse Error");
-                            
+                        Some(Ok(message)) => {
                             let headers = message.headers().unwrap();
 
                             let topic_name = __get_topic_name(&config, &headers);
@@ -157,14 +157,27 @@ impl Task {
                                 .add(&get_string(&config, "sm_header_message_hopcount_key"), format!("{}", msg_hop_count).as_bytes())
                                 .add(&get_string(&config, "sm_header_worker_timestamp_key"), get_time().as_bytes());
 
-                            match executor::block_on(producer.send(
-                                FutureRecord::to(&topic_name)
-                                    .payload(message.payload().unwrap_or_default())
-                                    .key(message.key().unwrap_or_default())
-                                    .headers(msg_headers)
-                                    .partition(task_id),
-                                std::time::Duration::from_secs(0),
-                            )) {
+                            let msg_payload = message.payload().unwrap_or_default();
+                            let msg_key = message.key().unwrap_or_default();
+
+                            match {
+                                let mut retry_count = 0;
+                                
+                                loop {
+                                    let base_record = BaseRecord::to(topic_name.as_str()).payload(msg_payload).key(msg_key).headers(msg_headers.clone()).partition(task_id);
+
+                                    match producer.send(base_record) {
+                                        Ok(_) => break Ok(()),
+                                        Err((e, record)) => {
+                                            retry_count += 1;
+                                            if retry_count >= 10000 {
+                                                break Err((e, record));
+                                            }
+                                            std::thread::sleep(std::time::Duration::from_millis(100));
+                                        }
+                                    }
+                                }
+                            } {
                                 Ok(_) => {
                                     if msg_job_id == get_string(&task, "job_id") {
                                         break;
@@ -173,9 +186,13 @@ impl Task {
                                 Err(e) => {
                                     let err_msg = format!("Task.__run(): Producer send error: {:?}", e);
                                     print_error(&err_msg);
+                                    task_obj.worker_success.set(false);
                                     return Err(err_msg);
                                 }
                             }
+                        },
+                        Some(Err(_)) => {
+                            continue;
                         },
                         None => {
                             break;
