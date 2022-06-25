@@ -3,6 +3,8 @@ from constants import *
 import os
 import time
 import docker
+import signal
+import shutil
 
 WORKING_FOLDER = f'{LOGS_FOLDER}'
 
@@ -12,6 +14,18 @@ KAFKA_SCHEDULER_CONFIG_URL = f'{KAFKA_SCHEDULER_SERVER_URL}/config'
 KAFKA_SCHEDULER_CONFIG_FILE_PATH = f'{WORKING_FOLDER}{os.sep}{KAFKA_SCHEDULER_CONFIG_FILE}'
 KAFKA_SCHEDULER_JOB_LOG_URL = f'{KAFKA_SCHEDULER_SERVER_URL}/api/job_log'
 KAFKA_SCHEDULER_JOB_LOG_FILE_PATH = f'{WORKING_FOLDER}{os.sep}{KAFKA_SCHEDULER_JOB_LOG_FILE}'
+
+def __clean():
+    shutil.rmtree(WORKING_FOLDER)
+        
+def signal_handler():
+    def __clean_exit():
+        printheader("Gracefully exiting...")
+        __clean()
+        exit(0)
+
+    signal.signal(signal.SIGINT, __clean_exit)
+    signal.signal(signal.SIGTERM, __clean_exit)
 
 def process_stats(stats):
     processed_stats = {}
@@ -59,6 +73,8 @@ if __name__ == '__main__':
     
     printsuccess(f'Starting docker monitor service')
 
+    signal_handler()
+    __clean()
     os.makedirs(WORKING_FOLDER, exist_ok=True)
     
     # Saving Kafka Job Configuration

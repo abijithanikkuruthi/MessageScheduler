@@ -17,6 +17,9 @@ PERFORMANCE_ANALYSIS_FOLDER=$APPLICATION_FOLDER/performance-analysis
 DB_GUI=False
 MONITORING_GUI=False
 
+# Build arguments for the application
+BUILD_ARGUMENTS="--build-arg UID=$(id -u) --build-arg GID=$(id -g)"
+
 #Build Script
 build_app() { cd $APPLICATION_FOLDER; docker-compose build; }
 build_kafka() { cd $KAFKA_FOLDER; docker-compose build kafka zookeeper; }
@@ -32,7 +35,7 @@ build_messenger_all() { cd $MESSENGER_FOLDER; docker-compose build; }
 build_messenger() { cd $MESSENGER_FOLDER; docker-compose build messenger; }
 build_mongo() { cd $MESSENGER_FOLDER; docker-compose build mongo messenger; }
 build_mongo_gui() { cd $MESSENGER_FOLDER; docker-compose build messenger mongo mongo-express; }
-build_performance_analysis() { cd $PERFORMANCE_ANALYSIS_FOLDER; docker-compose build; }
+build_performance_analysis() { cd $PERFORMANCE_ANALYSIS_FOLDER; docker-compose build $BUILD_ARGUMENTS; }
 
 build_experiment() {
     # Databases to build
@@ -86,7 +89,7 @@ build_all() {
     cd $DATABASE_SCHEDULER_FOLDER; docker-compose build;
     cd $MONITORING_FOLDER; docker-compose build;
     cd $MESSENGER_FOLDER; docker-compose build;
-    cd $PERFORMANCE_ANALYSIS_FOLDER; docker-compose build;
+    cd $PERFORMANCE_ANALYSIS_FOLDER; docker-compose build $BUILD_ARGUMENTS;
 }
 
 # Run Script
@@ -186,7 +189,6 @@ clean_all() {
     docker system prune -f
 
     # Clean Monitor logs
-    rm -rf $MONITORING_FOLDER/docker-monitor/logs/*
     rm -rf $MONITORING_FOLDER/prometheus
 }
 
@@ -227,6 +229,7 @@ usage() {
 
 match() {
     if [ "$1" = "$2" ]; then
+        matched=True
         return 0
     else
         return 1
@@ -243,6 +246,7 @@ main() {
     # Parse arguments
     while [[ $# -gt 0 ]]; do
         key="$1"
+        matched=False
         match "--all" "$key" && RUN_ALL=True && EXIT=False
         match "--app" "$key" && RUN_APP=True && EXIT=False
         match "--exp" "$key" && RUN_EXPERIMENT=True && EXIT=False
@@ -259,6 +263,12 @@ main() {
         match "-pl" "$key" && progress_live && EXIT=True
         match "--stop" "$key" && down_all && EXIT=True
         match "-s" "$key" && down_all && EXIT=True
+
+        if [ $matched = False ]; then
+            usage
+            echo "Invalid Option: '$key'"
+            exit 0
+        fi
         shift
     done
 

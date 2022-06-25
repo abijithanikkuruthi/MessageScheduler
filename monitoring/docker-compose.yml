@@ -6,13 +6,14 @@ services:
     build: ./docker-monitor
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./docker-monitor/logs:/app/logs
+      - ./docker-monitor:/app
     environment:
       - DOCKER_MONITOR_INTERVAL=${DOCKER_MONITOR_INTERVAL:-30}
       - KAFKA_ENABLED=${KAFKA_ENABLED:-True}
       - KAFKA_SCHEDULER_SERVER_URL=http://scheduler:8000
       - DATABASE_SCHEDULER_CASSANDRA_ENABLED=${DATABASE_SCHEDULER_CASSANDRA_ENABLED:-True}
       - DATABASE_SCHEDULER_MYSQL_ENABLED=${DATABASE_SCHEDULER_MYSQL_ENABLED:-True}
+
   kafka-jmx-exporter:
     image: bitnami/jmx-exporter:latest
     container_name: kafka-jmx-exporter

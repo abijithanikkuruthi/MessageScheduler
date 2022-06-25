@@ -75,6 +75,7 @@ def __analyse_kafka(data_path, result_path):
     data['Maxiumum'] = data_groupby_time_group.transform('max')
     data['95_Percentile'] = data_groupby_time_group.transform('quantile', 0.95)
     data['Mean'] = data_groupby_time_group.transform('mean')
+    data['Count'] = data_groupby_time_group.transform('count')
 
     del data_groupby_time_group
     gc.collect()
@@ -101,6 +102,17 @@ def __analyse_kafka(data_path, result_path):
     plt.savefig(f'{result_path}{os.sep}{prefix}messages_delay_over_time.pdf', bbox_inches='tight')
     plt.close()
 
+    # Message count over time
+    fig, ax = plt.subplots(figsize=(16, 9))
+    data[['Count', 'time_group']].plot(x='time_group', ax=ax, label='Kafka')
+
+    ax.title.set_text('Kafka')
+    ax.set_xlabel('Time (hours)')
+    ax.set_ylabel('Message scheduled rate (per minute)')
+
+    plt.savefig(f'{result_path}{os.sep}{prefix}messages_rate_over_time.pdf', bbox_inches='tight')
+    plt.close()
+    
 def __analyse_cassandra(data_path, result_path):
 
     printinfo(f'Analysing Cassandra data')
@@ -152,6 +164,7 @@ def __analyse_cassandra(data_path, result_path):
     data['Maxiumum'] = data.groupby('time_group')['abs_delay'].transform('max')
     data['95_Percentile'] = data.groupby('time_group')['abs_delay'].transform('quantile', 0.95)
     data['Mean'] = data.groupby('time_group')['abs_delay'].transform('mean')
+    data['Count'] = data.groupby('time_group')['abs_delay'].transform('count')
 
     data['time_group'] = data['time_group']/60
     data[['Maxiumum', '95_Percentile', 'Mean', 'time_group']].plot(x='time_group', ax=ax, label='Message Database')
@@ -162,6 +175,17 @@ def __analyse_cassandra(data_path, result_path):
     ax.set_ylabel('Message Delay (s)')
 
     plt.savefig(f'{result_path}{os.sep}{prefix}messages_delay_over_time.pdf', bbox_inches='tight')
+
+    # Message count over time
+    fig, ax = plt.subplots(figsize=(16, 9))
+    data[['Count', 'time_group']].plot(x='time_group', ax=ax, label='Cassandra')
+
+    ax.title.set_text('Cassandra')
+    ax.set_xlabel('Time (hours)')
+    ax.set_ylabel('Message scheduled rate (per minute)')
+
+    plt.savefig(f'{result_path}{os.sep}{prefix}messages_rate_over_time.pdf', bbox_inches='tight')
+    plt.close()
 
 def __analyse_mysql(data_path, result_path):
 
@@ -215,6 +239,7 @@ def __analyse_mysql(data_path, result_path):
     data['Maxiumum'] = data.groupby('time_group')['abs_delay'].transform('max')
     data['95_Percentile'] = data.groupby('time_group')['abs_delay'].transform('quantile', 0.95)
     data['Mean'] = data.groupby('time_group')['abs_delay'].transform('mean')
+    data['Count'] = data.groupby('time_group')['abs_delay'].transform('count')
 
     data['time_group'] = data['time_group']/60
     data[['Maxiumum', '95_Percentile', 'Mean', 'time_group']].plot(x='time_group', ax=ax, label='Message Database')
@@ -225,6 +250,17 @@ def __analyse_mysql(data_path, result_path):
     ax.set_ylabel('Message Delay (s)')
 
     plt.savefig(f'{result_path}{os.sep}{prefix}messages_delay_over_time.pdf', bbox_inches='tight')
+
+    # Message count over time
+    fig, ax = plt.subplots(figsize=(16, 9))
+    data[['Count', 'time_group']].plot(x='time_group', ax=ax, label='MySQL')
+
+    ax.title.set_text('MySQL')
+    ax.set_xlabel('Time (hours)')
+    ax.set_ylabel('Message scheduled rate (per minute)')
+
+    plt.savefig(f'{result_path}{os.sep}{prefix}messages_rate_over_time.pdf', bbox_inches='tight')
+    plt.close()
 
 def analyse(config):
     path = config['data_path']
