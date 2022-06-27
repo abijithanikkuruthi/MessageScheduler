@@ -11,8 +11,6 @@ use rdkafka::topic_partition_list::TopicPartitionList;
 use serde_json::Value as Json;
 use serde_json::json;
 
-use std::process::exit;
-
 use crate ::constants::Constants;
 use crate ::common::*;
 use crate ::multiprocess as mp;
@@ -156,7 +154,8 @@ impl Task {
                             let msg_headers = headers.detach().add(&get_string(&config, "sm_header_job_id_key"), get_string(&task, "job_id").as_bytes())
                                 .add(&get_string(&config, "sm_header_message_hopcount_key"), format!("{}", msg_hop_count).as_bytes())
                                 .add(&get_string(&config, "sm_header_worker_timestamp_key"), get_time().as_bytes());
-
+                            
+                            // if bucket case
                             match executor::block_on(producer.send(
                                 FutureRecord::to(&topic_name)
                                     .payload(message.payload().unwrap_or_default())
@@ -176,6 +175,7 @@ impl Task {
                                     return Err(err_msg);
                                 }
                             }
+                            // target topic case
                         },
                         None => {
                             break;
@@ -194,7 +194,6 @@ impl Task {
                     worker_success.set(false);
                 }
             }
-            exit(0);
         };
         mp::process(__run, self.clone())
     }
@@ -255,7 +254,6 @@ impl Worker {
                 }
             };
             post_worker(&worker_obj.config, &worker_obj.constants, &worker_obj.work);
-            exit(0);
         };
         mp::process(__run, self.clone())
     }
