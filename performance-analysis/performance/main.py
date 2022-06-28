@@ -159,6 +159,8 @@ if __name__ == '__main__':
     # Save experiment environment file in data folder
     shutil.copyfile(f'{config["root_path"]}{os.sep}experiment.env', f'{config["data_path"]}{os.sep}experiment.env')
 
+    EXPERIMENT_DURATION_HOURS = (EXPERIMENT_DURATION_HOURS + 1) if EXPERIMENT_DURATION_HOURS > 1 else EXPERIMENT_DURATION_HOURS
+    
     printinfo(f'Waiting for experiment to finish. Expected completion time: {(datetime.datetime.now() + datetime.timedelta(hours=EXPERIMENT_DURATION_HOURS)).strftime(TIME_FORMAT)}')
 
     experiment_running() and time.sleep(EXPERIMENT_DURATION_HOURS * 60 * 60)

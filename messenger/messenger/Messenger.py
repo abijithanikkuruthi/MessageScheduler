@@ -44,6 +44,7 @@ class Messenger(multiprocessing.Process):
                 def __get_random_timedelta():
                     upper_limit = max(self.end_time - time.time(), 2)
                     upper_limit = min(upper_limit, 60 * 60) # max 1 hour
+                    upper_limit = 60 * 60 if EXPERIMENT_DURATION_HOURS > 1 else upper_limit
                     return datetime.timedelta(seconds=randrange(0, int(upper_limit)))
                 time_to_send = datetime.datetime.now() + __get_random_timedelta()
                 time_to_send = time_to_send.strftime(TIME_FORMAT)
