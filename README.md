@@ -1,9 +1,12 @@
 # Message Scheduler for Apache Kafka
 
-Scheduled Message delivery implementation in Apache Kafka using micro services to group scheduled messages in Apache Kafka's storage based on their scheduled time of delivery. 
+Scheduled Message delivery implementation in Apache Kafka using micro services. The scheduled messages are grouped in Apache Kafka's storage based on their scheduled time of delivery. 
 
-<img src=https://raw.githubusercontent.com/abijithanikkuruthi/assets/master/MessageScheduler/diagram.png>
+<img src=https://raw.githubusercontent.com/abijithanikkuruthi/assets/master/MessageScheduler/architecture.png>
 
+## The Experiment Setup
+
+<img src=https://raw.githubusercontent.com/abijithanikkuruthi/assets/master/MessageScheduler/experiment-setup.png>
 
 ## Adding Scheduled Messages to Kafka
 
@@ -12,7 +15,7 @@ Scheduled messages can be inserted into Kafka like a normal message but with cus
 ```
 headers = {
             ‘time’ : ‘1 Sep 2023 18:40 CET’,
-            ‘topic’ : ‘MESSAGES’,
+            ‘topic’ : ‘USER_DEFINED_TOPIC’,
 	  }
 producer.send('SCHEDULED_MESSAGES', value=message, headers=headers)
 ```
@@ -24,14 +27,20 @@ Pre-requisistes for deployment: `docker` and `docker-compose`.
 ### Deployment on a single node
 
 ```
-# Start the Application
-./run.sh
+Usage: ./messagescheduler [OPTION]...
+Build and run the application.
+       --help              display this help and exit
+       --all               Run all services
+       --app               run the kafka message scheduling application alone
+       --exp               run experiment according to the configuration in 'experiment.env' file [default option]
+       --gui               include the corresponding GUI for each service
+       --grafana           enable the Grafana monitoring service
+  -c,  --clean             clean the application cache and logs
+  -dc, --deep-clean        clean the application and remove all containers
+  -p,  --progress          show the progress of the application
+  -pl, --progress-live     show the progress of the application
+  -s,  --stop              stop the application
 
-# Stop the Application
-./stop.sh
-
-# Clean monitor logs and other files
-./clean.sh
 ```
 For cluster deployment, update the environment variables in the YAML files with corresponding IP addresses of the nodes in the cluster and `docker-compose up -d` inside each module folder.
 
