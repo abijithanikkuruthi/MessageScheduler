@@ -20,7 +20,7 @@ def __analyse_job_log(log_path, result_path):
     job_df['creation_time'] = (job_df['creation_time'] - job_df['creation_time'].min()).astype('timedelta64[s]')/3600
 
     # JOB EXECUTION TIME GRAPH
-    fig, ax = plt.subplots(figsize=(16, 9))
+    fig, ax = plt.subplots(figsize=(8, 4))
     for label, df in job_df.groupby('name'):
         df.plot(x='creation_time', y='duration',ax=ax, label=label)
     ax.set_ylabel("Execution Time (s)")
@@ -61,7 +61,7 @@ def __analyse_docker_log(log_path, result_path):
     # Absolute Readings
     for col_name in [i for i in docker_df.columns if i not in ["time", "name", "timestamp"]]:
         try:
-            fig, ax = plt.subplots(figsize=(16, 9))
+            fig, ax = plt.subplots(figsize=(8, 4))
             for label, df in docker_df.groupby('name'):
                 df.plot(x='time', y=col_name, ax=ax, label=label)
             ax.set_ylabel(col_name)
@@ -75,7 +75,7 @@ def __analyse_docker_log(log_path, result_path):
     # Rate of change in values per second
     for col_name in [i for i in docker_df.columns if i not in ["time", "name", "timestamp"]]:
         try:
-            fig, ax = plt.subplots(figsize=(16, 9))
+            fig, ax = plt.subplots(figsize=(8, 4))
             for label, df in docker_df.groupby('name'):
                 for p in plot_numbers_list:
                     df[p] = df[p].diff()

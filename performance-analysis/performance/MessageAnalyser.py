@@ -25,7 +25,7 @@ def __analyse_kafka(data_path, result_path):
     data['__sm_message_hopcount'] = data['__sm_message_hopcount'].fillna(0).astype(int)
     data['__sm_message_hopcount'].describe().to_csv(f'{result_path}{os.sep}{prefix}messages_hopcount.csv')
 
-    fig, ax = plt.subplots(figsize=(16, 9))
+    fig, ax = plt.subplots(figsize=(8, 4))
 
     data['__sm_message_hopcount'].value_counts().plot.bar(ax=ax)
     ax.set_ylabel("Number of Messages (Frequency)")
@@ -41,7 +41,7 @@ def __analyse_kafka(data_path, result_path):
     plt.close()
 
     # Message Delay Histogram
-    fig, ax = plt.subplots(figsize=(16, 9))
+    fig, ax = plt.subplots(figsize=(8, 4))
     data['delay'].hist(bins=60, ax=ax)
     ax.set_ylabel("Number of Messages (Frequency)")
     ax.set_xlabel("Message Delay (Seconds)")
@@ -49,7 +49,7 @@ def __analyse_kafka(data_path, result_path):
     plt.close()
 
     # Message Delay Distribution
-    fig, ax = plt.subplots(figsize=(16, 9))
+    fig, ax = plt.subplots(figsize=(8, 4))
     data['delay'].plot.hist(ax=ax)
     ax.set_ylabel("Number of Messages (Frequency)")
     ax.set_xlabel("Message Delay (Seconds)")
@@ -57,7 +57,7 @@ def __analyse_kafka(data_path, result_path):
     plt.close()
 
     # Message Absolute Delay Histogram
-    fig, ax = plt.subplots(figsize=(16, 9))
+    fig, ax = plt.subplots(figsize=(8, 4))
     data['abs_delay'].hist(bins=60, ax=ax)
     ax.set_ylabel("Number of Messages (Frequency)")
     ax.set_xlabel("Message Absolute Delay (Seconds)")
@@ -69,7 +69,7 @@ def __analyse_kafka(data_path, result_path):
     data['abs_delay'].describe().to_csv(f'{result_path}{os.sep}{prefix}messages_abs_delay_statistics.csv')
 
     # Message Delay Over Time
-    fig, ax = plt.subplots(figsize=(16, 9))
+    fig, ax = plt.subplots(figsize=(8, 4))
     data = data.sort_values(by='time')
 
     data['time_group'] = ((data['time'] - data['time'].min()).astype('timedelta64[s]')/60).astype(int)
@@ -108,7 +108,7 @@ def __analyse_kafka(data_path, result_path):
     plt.close()
 
     # Message count over time
-    fig, ax = plt.subplots(figsize=(16, 9))
+    fig, ax = plt.subplots(figsize=(8, 4))
     data[['Count', 'time_group']].plot(x='time_group', ax=ax, label='Kafka')
 
     ax.title.set_text('Kafka')
@@ -141,21 +141,21 @@ def __analyse_cassandra(data_path, result_path):
     data['abs_delay'] = abs((data.time - data.sm_recieved_time).astype('timedelta64[s]'))
 
     # Message Delay Histogram
-    fig, ax = plt.subplots(figsize=(16, 9))
+    fig, ax = plt.subplots(figsize=(8, 4))
     data['delay'].hist(bins=60, ax=ax)
     ax.set_ylabel("Number of Messages (Frequency)")
     ax.set_xlabel("Message Delay (Seconds)")
     plt.savefig(f'{result_path}{os.sep}{prefix}messages_delay.pdf', bbox_inches='tight')
 
     # Message Delay Distribution
-    fig, ax = plt.subplots(figsize=(16, 9))
+    fig, ax = plt.subplots(figsize=(8, 4))
     data['delay'].plot.hist(ax=ax)
     ax.set_ylabel("Number of Messages (Frequency)")
     ax.set_xlabel("Message Delay (Seconds)")
     plt.savefig(f'{result_path}{os.sep}{prefix}messages_delay_distribution.pdf', bbox_inches='tight')
 
     # Message Absolute Delay Histogram
-    fig, ax = plt.subplots(figsize=(16, 9))
+    fig, ax = plt.subplots(figsize=(8, 4))
     data['abs_delay'].hist(bins=60, ax=ax)
     ax.set_ylabel("Number of Messages (Frequency)")
     ax.set_xlabel("Message Absolute Delay (Seconds)")
@@ -166,7 +166,7 @@ def __analyse_cassandra(data_path, result_path):
     data['abs_delay'].describe().to_csv(f'{result_path}{os.sep}{prefix}messages_abs_delay_statistics.csv')
 
     # Message Delay Over Time
-    fig, ax = plt.subplots(figsize=(16, 9))
+    fig, ax = plt.subplots(figsize=(8, 4))
     data = data.sort_values(by='time')
 
     data['time_group'] = ((data['time'] - data['time'].min()).astype('timedelta64[s]')/60).astype(int)
@@ -187,7 +187,7 @@ def __analyse_cassandra(data_path, result_path):
     plt.savefig(f'{result_path}{os.sep}{prefix}messages_delay_over_time.pdf', bbox_inches='tight')
 
     # Message count over time
-    fig, ax = plt.subplots(figsize=(16, 9))
+    fig, ax = plt.subplots(figsize=(8, 4))
     data[['Count', 'time_group']].plot(x='time_group', ax=ax, label='Cassandra')
 
     ax.title.set_text('Cassandra')
@@ -221,21 +221,21 @@ def __analyse_mysql(data_path, result_path):
     data['abs_delay'] = abs((data.time - data.__sm_recieved_time).astype('timedelta64[s]'))
 
     # Message Delay Histogram
-    fig, ax = plt.subplots(figsize=(16, 9))
+    fig, ax = plt.subplots(figsize=(8, 4))
     data['delay'].hist(bins=60, ax=ax)
     ax.set_ylabel("Number of Messages (Frequency)")
     ax.set_xlabel("Message Delay (Seconds)")
     plt.savefig(f'{result_path}{os.sep}{prefix}messages_delay.pdf', bbox_inches='tight')
 
     # Message Delay Distribution
-    fig, ax = plt.subplots(figsize=(16, 9))
+    fig, ax = plt.subplots(figsize=(8, 4))
     data['delay'].plot.hist(ax=ax)
     ax.set_ylabel("Number of Messages (Frequency)")
     ax.set_xlabel("Message Delay (Seconds)")
     plt.savefig(f'{result_path}{os.sep}{prefix}messages_delay_distribution.pdf', bbox_inches='tight')
 
     # Message Absolute Delay Histogram
-    fig, ax = plt.subplots(figsize=(16, 9))
+    fig, ax = plt.subplots(figsize=(8, 4))
     data['abs_delay'].hist(bins=60, ax=ax)
     ax.set_ylabel("Number of Messages (Frequency)")
     ax.set_xlabel("Message Absolute Delay (Seconds)")
@@ -246,7 +246,7 @@ def __analyse_mysql(data_path, result_path):
     data['abs_delay'].describe().to_csv(f'{result_path}{os.sep}{prefix}messages_abs_delay_statistics.csv')
 
     # Message Delay Over Time
-    fig, ax = plt.subplots(figsize=(16, 9))
+    fig, ax = plt.subplots(figsize=(8, 4))
     data = data.sort_values(by='time')
 
     data['time_group'] = ((data['time'] - data['time'].min()).astype('timedelta64[s]')/60).astype(int)
@@ -267,7 +267,7 @@ def __analyse_mysql(data_path, result_path):
     plt.savefig(f'{result_path}{os.sep}{prefix}messages_delay_over_time.pdf', bbox_inches='tight')
 
     # Message count over time
-    fig, ax = plt.subplots(figsize=(16, 9))
+    fig, ax = plt.subplots(figsize=(8, 4))
     data[['Count', 'time_group']].plot(x='time_group', ax=ax, label='MySQL')
 
     ax.title.set_text('MySQL')
