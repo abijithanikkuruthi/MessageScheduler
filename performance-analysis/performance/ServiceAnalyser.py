@@ -104,3 +104,4 @@ def analyse(config):
     KAFKA_ENABLED and __analyse_job_log(kafka_job_log_path, result_path)
     __analyse_docker_log(docker_log_path, result_path)
     plt.close('all')
+

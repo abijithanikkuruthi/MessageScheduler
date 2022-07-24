@@ -74,5 +74,16 @@ def get_config():
 
     return config
 
+def make_config(data_path):
+    
+    config = {
+        'data_path': data_path,
+    }
+
+    config['data_path'] = get_absolute_path(config['data_path'])
+    os.makedirs(config['data_path'], exist_ok=True)
+
+    return config
+
 if __name__ == '__main__':
     print(get_config())

@@ -6,8 +6,9 @@ from cassandra.cluster import Cluster
 import mysql.connector
 import time
 import datetime
+import sys
 
-from common import get_config, printinfo, printsuccess, printwarning, printerror, ProgressInfo
+from common import get_config, make_config, printinfo, printsuccess, printwarning, printerror, ProgressInfo
 import ServiceAnalyser
 import MessageAnalyser
 from constants import *
@@ -154,29 +155,39 @@ def analyse(config):
 
 if __name__ == '__main__':
 
-    config = get_config()
+    if len(sys.argv) == 1:
+        config = get_config()
 
-    # Save experiment environment file in data folder
-    shutil.copyfile(f'{config["root_path"]}{os.sep}experiment.env', f'{config["data_path"]}{os.sep}experiment.env')
+        # Save experiment environment file in data folder
+        shutil.copyfile(f'{config["root_path"]}{os.sep}experiment.env', f'{config["data_path"]}{os.sep}experiment.env')
 
-    EXPERIMENT_DURATION_HOURS = (EXPERIMENT_DURATION_HOURS + 1) if EXPERIMENT_DURATION_HOURS > 1 else EXPERIMENT_DURATION_HOURS
+        EXPERIMENT_DURATION_HOURS = (EXPERIMENT_DURATION_HOURS + 1) if EXPERIMENT_DURATION_HOURS > 1 else EXPERIMENT_DURATION_HOURS
+        
+        printinfo(f'Waiting for experiment to finish. Expected completion time: {(datetime.datetime.now() + datetime.timedelta(hours=EXPERIMENT_DURATION_HOURS)).strftime(TIME_FORMAT)}')
+
+        experiment_running() and time.sleep(EXPERIMENT_DURATION_HOURS * 60 * 60)
+
+        retries = 0
+        while experiment_running(print_log=True):
+            printwarning(f'All messages are yet to be collected... Waiting for 1 more minute...')
+            time.sleep(60)
+            retries += 1
+            if retries > 10:
+                printerror(f'Experiment is still running after {retries} minutes')
+                break
+        
+        printsuccess('Collecting data...')
+        collect(config)
+        printsuccess('Data collected! Analyzing data...')
     
-    printinfo(f'Waiting for experiment to finish. Expected completion time: {(datetime.datetime.now() + datetime.timedelta(hours=EXPERIMENT_DURATION_HOURS)).strftime(TIME_FORMAT)}')
-
-    experiment_running() and time.sleep(EXPERIMENT_DURATION_HOURS * 60 * 60)
-
-    retries = 0
-    while experiment_running(print_log=True):
-        printwarning(f'All messages are yet to be collected... Waiting for 1 more minute...')
-        time.sleep(60)
-        retries += 1
-        if retries > 10:
-            printerror(f'Experiment is still running after {retries} minutes')
-            break
+    elif len(sys.argv) == 2:
+        config = make_config(sys.argv[1])
+        printinfo(f'Analyzing {config["data_path"]}')
     
-    printsuccess('Collecting data...')
-    collect(config)
-    printsuccess('Data collected! Analyzing data...')
+    else:
+        printerror('Invalid number of arguments')
+        sys.exit(1)
+        
     analyse(config)
     printsuccess('Data analyzed!')
     printsuccess(f'Data is stored in {config["data_path"]}')
