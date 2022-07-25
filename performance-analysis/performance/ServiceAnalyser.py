@@ -52,7 +52,7 @@ def __analyse_docker_log(log_path, result_path):
     docker_df['time'] = pd.to_datetime(docker_df['time'])
     docker_df['timestamp'] = docker_df['time'].dt.strftime('%Y-%m-%d %H:%M')
     docker_df['time'] = (docker_df['time'] - docker_df['time'].min()).astype('timedelta64[s]')/3600
-    docker_df = docker_df[docker_df['name'].isin(['database-scheduler', 'cassandra', 'mysql','messagehandler', 'worker', 'scheduler', 'kafka'])]
+    docker_df = docker_df[docker_df['name'].isin(['database-scheduler', 'cassandra', 'mysql', 'scheduler', 'kafka'])] # removed worker and messagehandler
 
     plot_numbers_list = ['pids', 'net_tx (MB)', 'net_rx (MB)',
         'memory_usage (MB)', 'cpu_user (s)', 'cpu_system (s)',
