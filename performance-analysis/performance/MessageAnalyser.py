@@ -73,7 +73,7 @@ def __analyse_kafka(data_path, result_path):
     data['abs_delay'].describe().to_csv(f'{result_path}{os.sep}{prefix}messages_abs_delay_statistics.csv')
 
     # Message Delay Over Time
-    fig, ax = plt.subplots(figsize=(8, 4), rasterized=False, dpi=100)
+    fig, ax = plt.subplots(figsize=(8, 4), rasterized=False, dpi=300)
     data = data.sort_values(by='time')
 
     data['time_group'] = ((data['time'] - data['time'].min()).astype('timedelta64[s]')/60).astype(int)
