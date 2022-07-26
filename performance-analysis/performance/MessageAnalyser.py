@@ -34,6 +34,10 @@ def __analyse_kafka(data_path, result_path):
 
     # Message Delay Computations
     data.time = pd.to_datetime(data.time)
+
+    # only rows with time less than 24 hours - large scale data
+    data = data[(data['time'] - data['time'].min()).astype('timedelta64[s]')/3600 < 24]
+
     data.__sm_worker_timestamp.fillna(data.__sm_mh_timestamp, inplace=True)
     data.__sm_worker_timestamp = pd.to_datetime(data.__sm_worker_timestamp)
     data['delay'] = (data.time - data.__sm_worker_timestamp).astype('timedelta64[s]').astype(int)
