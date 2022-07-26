@@ -19,6 +19,9 @@ def __analyse_job_log(log_path, result_path):
     job_df['name'] = job_df['name'].str.replace('__SM_', '')
     job_df['creation_time'] = (job_df['creation_time'] - job_df['creation_time'].min()).astype('timedelta64[s]')/3600
 
+    # only rows with time less than 24 hours - large scale data
+    job_df = job_df[job_df['creation_time'] < 24]
+
     # JOB EXECUTION TIME GRAPH
     fig, ax = plt.subplots(figsize=(8, 4))
     for label, df in job_df.groupby('name'):
