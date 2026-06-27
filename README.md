@@ -1,6 +1,6 @@
 # Message Scheduler for Apache Kafka
 
-Scheduled Message delivery implementation in Apache Kafka using micro services. The scheduled messages are grouped in Apache Kafka's storage based on their scheduled time of delivery. 
+Scheduled Message delivery implementation in Apache Kafka using micro services. The scheduled messages are grouped in Apache Kafka's storage based on their scheduled time of delivery.
 
 <img src=https://raw.githubusercontent.com/abijithanikkuruthi/assets/master/MessageScheduler/architecture.png>
 
